@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.env
+venv/
+.venv/
+.envrc
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Docker
+.dockerignore
+
+# OS
+Thumbs.db
+
+# Test & coverage
+htmlcov/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+
+# Misc
+openapi.yaml
