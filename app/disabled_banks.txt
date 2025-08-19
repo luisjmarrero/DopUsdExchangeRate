@@ -1,3 +1,0 @@
-# List banks (one per line) to disable from syncing
-BHD
-# Example: Banreservas

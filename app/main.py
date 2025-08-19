@@ -1,6 +1,5 @@
 
-from fastapi import FastAPI, HTTPException
-from fastapi import BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.models import ExchangeRate
@@ -35,28 +34,31 @@ def sync_rates_job():
 	results = []
 	db = SessionLocal()
 	from app.models_db import BankDB
-	enabled_banks = [b.name for b in db.query(BankDB).filter(BankDB.disabled == False).all()]
+	enabled_banks = db.query(BankDB).filter(BankDB.disabled == False).all()
 	db.close()
 	for bank in enabled_banks:
-		logger.info(f"Syncing rates for bank: {bank}")
-		rate = scraper.get_bank_rate(bank)
-		if rate:
-			db = SessionLocal()
-			db_rate = ExchangeRateDB(
-				bank=bank,
-				buy_rate=rate['buy_rate'],
-				sell_rate=rate['sell_rate'],
-				sync_date=datetime.now(),
-				source=rate.get('source', 'scraper')
+		# Check latest rate for this bank
+		latest_rate = db.query(ExchangeRateDB).filter(ExchangeRateDB.bank == bank.name).order_by(ExchangeRateDB.sync_date.desc()).first()
+		if latest_rate and (datetime.now() - latest_rate.sync_date).total_seconds() < 3600:
+			logger.info(f"Skipping {bank.name}: latest rate is less than an hour old.")
+			continue
+		logger.info(f"Syncing rates for {bank.name}...")
+		rate_data = scraper.get_bank_rate(bank.name)
+		if rate_data:
+			buy_rate = rate_data["buy_rate"]
+			sell_rate = rate_data["sell_rate"]
+			new_rate = ExchangeRateDB(
+				bank=bank.name,
+				buy_rate=buy_rate,
+				sell_rate=sell_rate,
+				source=rate_data["source"],
+				sync_date=datetime.utcnow()
 			)
-			db.add(db_rate)
+			db.add(new_rate)
 			db.commit()
-			db.refresh(db_rate)
-			db.close()
-			results.append(db_rate)
-			logger.info(f"Rates for {bank} synced: buy={rate['buy_rate']}, sell={rate['sell_rate']}, source={db_rate.source}")
+			logger.info(f"Saved rates for {bank.name}: buy={buy_rate}, sell={sell_rate}")
 		else:
-			logger.warning(f"No rates found for {bank}")
+			logger.warning(f"No rates found for {bank.name}")
 	logger.info(f"Sync job complete. Banks synced: {len(results)}")
 
 @app.post("/sync")
@@ -117,26 +119,84 @@ def get_banks():
 	db.close()
 	return {"banks": [{"name": b.name, "disabled": b.disabled} for b in banks]}
 
-@app.post("/calculate/buy/{dop_ammount}")
-def calculate_buy(dop_ammount: float):
-	db = SessionLocal()
-	rates = db.query(ExchangeRateDB).order_by(ExchangeRateDB.buy_rate.asc()).all()
-	db.close()
-	results = []
-	for r in rates:
-		usd = dop_ammount / r.buy_rate if r.buy_rate else 0
-		results.append({"bank": r.bank, "usd": round(usd, 2), "buy_rate": r.buy_rate})
-	results.sort(key=lambda x: x["usd"], reverse=True)
-	return results
 
-@app.post("/calculate/sell/{usd_ammount}")
-def calculate_sell(usd_ammount: float):
+
+# New /buy endpoint (GET)
+
+
+@app.get("/buy")
+def buy(dop: float = None, usd: float = None):
+	if dop is None and usd is None:
+		raise HTTPException(status_code=400, detail="Provide either 'dop' or 'usd' as a query parameter.")
 	db = SessionLocal()
-	rates = db.query(ExchangeRateDB).order_by(ExchangeRateDB.sell_rate.desc()).all()
+	# Get latest rate for each bank
+	banks = db.query(ExchangeRateDB.bank).distinct().all()
+	latest_rates = []
+	for bank_tuple in banks:
+		bank = bank_tuple[0]
+		rate = db.query(ExchangeRateDB).filter(ExchangeRateDB.bank == bank).order_by(ExchangeRateDB.sync_date.desc()).first()
+		if rate:
+			latest_rates.append(rate)
 	db.close()
 	results = []
-	for r in rates:
-		dop = usd_ammount * r.sell_rate if r.sell_rate else 0
-		results.append({"bank": r.bank, "dop": round(dop, 2), "sell_rate": r.sell_rate})
-	results.sort(key=lambda x: x["dop"], reverse=True)
-	return results
+	buy_rates = [r.buy_rate for r in latest_rates if r.buy_rate]
+	avg_buy_rate = sum(buy_rates) / len(buy_rates) if buy_rates else None
+	for r in latest_rates:
+		if dop is not None:
+			usd_calc = dop / r.buy_rate if r.buy_rate else 0
+			results.append({"bank": r.bank, "usd": round(usd_calc, 2), "dop": dop, "buy_rate": r.buy_rate})
+		elif usd is not None:
+			dop_calc = usd * r.buy_rate if r.buy_rate else 0
+			results.append({"bank": r.bank, "usd": usd, "dop": round(dop_calc, 2), "buy_rate": r.buy_rate})
+	# Sort by USD descending if dop provided, else by DOP descending
+	if dop is not None:
+		results.sort(key=lambda x: x["usd"], reverse=True)
+	elif usd is not None:
+		results.sort(key=lambda x: x["dop"], reverse=True)
+	average = None
+	if avg_buy_rate:
+		if dop is not None:
+			average = {"avg_buy_rate": round(avg_buy_rate, 4), "usd": round(dop / avg_buy_rate, 2), "dop": dop}
+		elif usd is not None:
+			average = {"avg_buy_rate": round(avg_buy_rate, 4), "usd": usd, "dop": round(usd * avg_buy_rate, 2)}
+	return {"results": results, "average": average}
+
+# New /sell endpoint (GET)
+
+
+@app.get("/sell")
+def sell(dop: float = None, usd: float = None):
+	if dop is None and usd is None:
+		raise HTTPException(status_code=400, detail="Provide either 'dop' or 'usd' as a query parameter.")
+	db = SessionLocal()
+	# Get latest rate for each bank
+	banks = db.query(ExchangeRateDB.bank).distinct().all()
+	latest_rates = []
+	for bank_tuple in banks:
+		bank = bank_tuple[0]
+		rate = db.query(ExchangeRateDB).filter(ExchangeRateDB.bank == bank).order_by(ExchangeRateDB.sync_date.desc()).first()
+		if rate:
+			latest_rates.append(rate)
+	db.close()
+	results = []
+	sell_rates = [r.sell_rate for r in latest_rates if r.sell_rate]
+	avg_sell_rate = sum(sell_rates) / len(sell_rates) if sell_rates else None
+	for r in latest_rates:
+		if dop is not None:
+			usd_calc = dop / r.sell_rate if r.sell_rate else 0
+			results.append({"bank": r.bank, "usd": round(usd_calc, 2), "dop": dop, "sell_rate": r.sell_rate})
+		elif usd is not None:
+			dop_calc = usd * r.sell_rate if r.sell_rate else 0
+			results.append({"bank": r.bank, "usd": usd, "dop": round(dop_calc, 2), "sell_rate": r.sell_rate})
+	# Sort by USD descending if dop provided, else by DOP descending
+	if dop is not None:
+		results.sort(key=lambda x: x["usd"], reverse=True)
+	elif usd is not None:
+		results.sort(key=lambda x: x["dop"], reverse=True)
+	average = None
+	if avg_sell_rate:
+		if dop is not None:
+			average = {"avg_sell_rate": round(avg_sell_rate, 4), "usd": round(dop / avg_sell_rate, 2), "dop": dop}
+		elif usd is not None:
+			average = {"avg_sell_rate": round(avg_sell_rate, 4), "usd": usd, "dop": round(usd * avg_sell_rate, 2)}
+	return {"results": results, "average": average}

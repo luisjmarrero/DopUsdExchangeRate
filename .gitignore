@@ -27,6 +27,3 @@ htmlcov/
 .coverage.*
 .cache
 .pytest_cache/
-
-# Misc
-openapi.yaml

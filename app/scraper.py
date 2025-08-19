@@ -12,6 +12,36 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def get_bank_rate(bank: str):
+	if bank == "Banreservas":
+		logger.info("Scraping Banreservas exchange rates...")
+		try:
+			url = "https://www.banreservas.com/"
+			headers = {"User-Agent": "Mozilla/5.0"}
+			response = requests.get(url, headers=headers, timeout=10)
+			response.raise_for_status()
+			soup = BeautifulSoup(response.text, "html.parser")
+			compra_els = soup.find_all(class_="tasacambio-compraUS")
+			venta_els = soup.find_all(class_="tasacambio-ventaUS")
+			buy_rates = []
+			sell_rates = []
+			import re
+			for el in compra_els:
+				buy_match = re.search(r"([\d.,]+)", el.get_text(strip=True))
+				if buy_match:
+					buy_rates.append(float(buy_match.group(1).replace(",", ".")))
+			for el in venta_els:
+				sell_match = re.search(r"([\d.,]+)", el.get_text(strip=True))
+				if sell_match:
+					sell_rates.append(float(sell_match.group(1).replace(",", ".")))
+			if buy_rates and sell_rates:
+				buy_rate = min(sell_rates)  # Use venta (sell) rate for buying USD
+				sell_rate = max(buy_rates)  # Use compra (buy) rate for selling USD
+				logger.info(f"Banreservas rates found: buy={buy_rate}, sell={sell_rate}")
+				return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
+			else:
+				logger.warning("Could not find Banreservas rate elements with expected classes.")
+		except Exception as e:
+			logger.error(f"Error scraping Banreservas rates: {e}")
 	if bank == "Scotiabank":
 		logger.info("Scraping Scotiabank exchange rates...")
 		url = "https://do.scotiabank.com/banca-personal/tarifas/tasas-de-cambio.html"
@@ -21,26 +51,24 @@ def get_bank_rate(bank: str):
 			soup = BeautifulSoup(response.text, "html.parser")
 			# Find the table with USD rates
 			table = soup.find("table")
+			buy_rates = []
+			sell_rates = []
 			if table:
 				rows = table.find_all("tr")
 				for row in rows:
 					cols = row.find_all("td")
 					if len(cols) >= 4 and "Estados Unidos" in cols[0].text:
-						# Prefer 'Canales Digitales' row, fallback to 'Sucursales' if needed
-						if "Canales Digitales" in cols[1].text:
-							buy_rate = float(cols[2].text.replace(",", ".").strip())
-							sell_rate = float(cols[3].text.replace(",", ".").strip())
-							logger.info(f"Scotiabank rates found: buy={buy_rate}, sell={sell_rate}")
-							return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
-				# Fallback: try 'Sucursales' if 'Canales Digitales' not found
-				for row in rows:
-					cols = row.find_all("td")
-					if len(cols) >= 4 and "Estados Unidos" in cols[0].text and "Sucursales" in cols[1].text:
-						buy_rate = float(cols[2].text.replace(",", ".").strip())
-						sell_rate = float(cols[3].text.replace(",", ".").strip())
-						logger.info(f"Scotiabank rates found (Sucursales): buy={buy_rate}, sell={sell_rate}")
-						return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
-				logger.warning("USD row not found in Scotiabank table.")
+						buy_val = float(cols[2].text.replace(",", ".").strip())
+						sell_val = float(cols[3].text.replace(",", ".").strip())
+						buy_rates.append(buy_val)
+						sell_rates.append(sell_val)
+				if buy_rates and sell_rates:
+					buy_rate = min(sell_rates)  # Use venta (sell) rate for buying USD
+					sell_rate = max(buy_rates)  # Use compra (buy) rate for selling USD
+					logger.info(f"Scotiabank rates found: buy={buy_rate}, sell={sell_rate}")
+					return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
+				else:
+					logger.warning("USD row not found in Scotiabank table.")
 			else:
 				logger.warning("Exchange rates table not found for Scotiabank.")
 		except Exception as e:
@@ -70,15 +98,25 @@ def get_bank_rate(bank: str):
 		def extract_rates(popup):
 			table = popup.find_element(By.CLASS_NAME, "rate_data_tble")
 			rows = table.find_elements(By.TAG_NAME, "tr")
+			buy_rates = []
+			sell_rates = []
 			for row in rows:
 				cols = row.find_elements(By.TAG_NAME, "td")
 				if len(cols) >= 3 and "Dólares US$" in cols[0].text:
 					buy_text = cols[1].text.replace(",", ".").replace("DOP", "").strip()
 					sell_text = cols[2].text.replace(",", ".").replace("DOP", "").strip()
-					buy_rate = float(buy_text)
-					sell_rate = float(sell_text)
-					logger.info(f"BHD rates found: buy={buy_rate}, sell={sell_rate}")
-					return buy_rate, sell_rate
+					try:
+						buy_rate = float(buy_text)
+						sell_rate = float(sell_text)
+						buy_rates.append(buy_rate)
+						sell_rates.append(sell_rate)
+					except Exception:
+						continue
+			if buy_rates and sell_rates:
+				min_buy = min(sell_rates)  # Use venta (sell) rate for buying USD
+				max_sell = max(buy_rates)  # Use compra (buy) rate for selling USD
+				logger.info(f"BHD rates found: buy={min_buy}, sell={max_sell}")
+				return min_buy, max_sell
 			logger.warning("Dólares US$ row not found in BHD modal table.")
 			return None, None
 
