@@ -5,6 +5,7 @@ psycopg2-binary
 pydantic
 requests
 python-dotenv
+pytest
 apscheduler
 beautifulsoup4
 selenium

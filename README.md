@@ -94,6 +94,25 @@ docker-compose up --build
 
 API will be available at `http://localhost:8000`
 
+## Running Unit Tests
+
+To run the unit tests for this project:
+
+1. Activate your virtual environment (if not already active):
+   ```bash
+   source venv/bin/activate
+   ```
+2. Run pytest from the project root:
+   ```bash
+   python -m pytest
+   ```
+   Or for more detailed output:
+   ```bash
+   python -m pytest -v
+   ```
+
+All tests are located in the `tests/` directory and cover core modules including scraping, CRUD, and utilities.
+
 ## Testing with Postman
 - Import the provided endpoints into Postman
 - Test each endpoint as described above
