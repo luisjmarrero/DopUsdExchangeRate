@@ -20,9 +20,22 @@ def create_rate(bank: str, buy_rate: float, sell_rate: float):
     db.close()
     return db_rate
 
-def get_all_rates_ordered():
+def get_all_rates_ordered(sort_by: str = 'sync_date', order: str = 'desc'):
     db = SessionLocal()
-    rates = db.query(ExchangeRateDB).order_by(ExchangeRateDB.sync_date.desc(), ExchangeRateDB.bank.asc()).all()
+    # Map sort_by to column
+    sort_columns = {
+        'bank': ExchangeRateDB.bank,
+        'buy_rate': ExchangeRateDB.buy_rate,
+        'sell_rate': ExchangeRateDB.sell_rate,
+        'sync_date': ExchangeRateDB.sync_date,
+        'source': ExchangeRateDB.source
+    }
+    sort_col = sort_columns.get(sort_by, ExchangeRateDB.sync_date)
+    if order == 'desc':
+        sort_col = sort_col.desc()
+    else:
+        sort_col = sort_col.asc()
+    rates = db.query(ExchangeRateDB).order_by(sort_col, ExchangeRateDB.bank.asc()).all()
     db.close()
     return rates
 

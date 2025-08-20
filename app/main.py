@@ -108,17 +108,24 @@ def get_rates():
     db.close()
     return latest_rates
 
-@app.get("/rates/all", response_model=List[ExchangeRate])
-def get_all_rates():
-    logger.info("Fetching all rates ordered by sync_date desc, then bank asc...")
-    rates = crud.get_all_rates_ordered()
-    return [ExchangeRate(
+from fastapi_pagination import Page, add_pagination, paginate
+
+@app.get("/rates/all", response_model=Page[ExchangeRate])
+def get_all_rates(page: int = 1, size: int = 10, sort_by: str = 'sync_date', order: str = 'desc'):
+    logger.info(f"Fetching all rates ordered by {sort_by} {order}...")
+    rates = crud.get_all_rates_ordered(sort_by=sort_by, order=order)
+    # Convert to ExchangeRate model
+    rates_models = [ExchangeRate(
         bank=r.bank,
         buy_rate=r.buy_rate,
         sell_rate=r.sell_rate,
         sync_date=r.sync_date,
         source=r.source if r.source is not None else ""
     ) for r in rates]
+    return paginate(rates_models)
+
+add_pagination(app)
+
 
 @app.get("/rates/{bank}", response_model=List[ExchangeRate])
 def get_bank_rates(bank: str):

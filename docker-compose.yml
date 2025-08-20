@@ -20,5 +20,16 @@ services:
       - "8000:8000"
     volumes:
       - ./app:/app
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    environment:
+      - REACT_APP_API_URL=http://api:8000
+
 volumes:
   postgres_data:
