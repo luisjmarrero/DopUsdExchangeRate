@@ -2,9 +2,44 @@ import logo from './logo.svg';
 import './App.css';
 
 import React, { useEffect, useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from 'recharts';
 
 function App() {
   const [rates, setRates] = useState([]);
+  const [allRates, setAllRates] = useState([]);
+  const [graphLoading, setGraphLoading] = useState(true);
+  const [graphError, setGraphError] = useState(null);
+  // For toggling banks in the graph
+  const [visibleBanks, setVisibleBanks] = useState([]);
+
+  // Transform allRates for Recharts
+  const graphData = React.useMemo(() => {
+    if (!allRates || allRates.length === 0) return [];
+    // Get all unique banks
+    const banks = Array.from(new Set(allRates.map(r => r.bank)));
+    // Set visibleBanks on first load
+    if (visibleBanks.length === 0 && banks.length > 0) setVisibleBanks(banks);
+    // Group by date
+    const dateMap = {};
+    allRates.forEach(r => {
+      const date = new Date(r.sync_date).toLocaleDateString();
+      if (!dateMap[date]) dateMap[date] = { date };
+      dateMap[date][r.bank] = r.buy_rate;
+    });
+    // Convert to array and sort by date
+    return Object.values(dateMap).sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [allRates, visibleBanks]);
+
+  // Calculate min/max for Y axis
+  const yValues = graphData.flatMap(d =>
+    visibleBanks.map(bank => d[bank]).filter(v => typeof v === 'number')
+  );
+
+
+  const minValue = yValues.length ? Math.floor(Math.min(...yValues)) : 0;
+  const maxValue = yValues.length ? Math.ceil(Math.max(...yValues)) : 100;
+
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: 'bank', direction: 'asc' });
@@ -12,6 +47,34 @@ function App() {
   const rowsPerPage = 10;
 
   useEffect(() => {
+    // Fetch all historical rates for the graph
+    setGraphLoading(true);
+    setGraphError(null);
+    // Fetch all pages of historical rates
+    const fetchAllRates = async () => {
+      let all = [];
+      let page = 1;
+      const size = 100;
+      let totalPages = 1;
+      try {
+        do {
+          const res = await fetch(`http://localhost:8000/rates/all?page=${page}&size=${size}&sort_by=sync_date&order=asc`);
+          if (!res.ok) throw new Error('Network response was not ok');
+          const data = await res.json();
+          all = all.concat(data.items);
+          totalPages = data.pages || 1;
+          page++;
+        } while (page <= totalPages);
+        setAllRates(all);
+        setGraphLoading(false);
+        setGraphError(null);
+      } catch (err) {
+        setGraphError(err.message);
+        setGraphLoading(false);
+      }
+    };
+    fetchAllRates();
+
     setLoading(true);
     setError(null);
     const params = new URLSearchParams({
@@ -53,6 +116,48 @@ function App() {
   return (
     <div className="container py-5">
       <h2 className="mb-4 text-center">DOP/USD Exchange Rates</h2>
+      {/* Time Series Graph */}
+      <div className="mb-4">
+        {graphLoading ? (
+          <div className="text-center py-3">Loading graph...</div>
+        ) : graphError ? (
+          <div className="alert alert-danger">{graphError}</div>
+        ) : (
+          <>
+            {/* Bank toggles */}
+            <div className="mb-2">
+              {Array.from(new Set(allRates.map(r => r.bank))).map(bank => (
+                <label key={bank} style={{ marginRight: 12 }}>
+                  <input
+                    type="checkbox"
+                    checked={visibleBanks.includes(bank)}
+                    onChange={e => {
+                      setVisibleBanks(v =>
+                        e.target.checked
+                          ? [...v, bank]
+                          : v.filter(b => b !== bank)
+                      );
+                    }}
+                  />{' '}
+                  {bank}
+                </label>
+              ))}
+            </div>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={graphData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis domain={[minValue, maxValue]} />
+                <Tooltip />
+                <Legend />
+                {visibleBanks.map(bank => (
+                  <Line key={bank} type="monotone" dataKey={bank} strokeWidth={2} dot={false} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </>
+        )}
+      </div>
       <div className="row justify-content-center">
         <div className="col-lg-10">
           {loading ? (
