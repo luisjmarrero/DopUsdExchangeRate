@@ -28,6 +28,40 @@ function App() {
   // For toggling banks in the graph
   const [visibleBanks, setVisibleBanks] = useState([]);
 
+  // Color maps for banks
+  const [bankColorsBuy, setBankColorsBuy] = useState({});
+  const [bankColorsSell, setBankColorsSell] = useState({});
+
+  // Generate random color for each bank
+  function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+  }
+
+  // Assign colors when banks change
+  useEffect(() => {
+    const banks = Array.from(new Set(allRates.map(r => r.bank)));
+    setBankColorsBuy(prev => {
+      const newColors = { ...prev };
+      banks.forEach(bank => {
+        if (!newColors[bank]) newColors[bank] = getRandomColor();
+      });
+      return newColors;
+    });
+    setBankColorsSell(prev => {
+      const newColors = { ...prev };
+      banks.forEach(bank => {
+        if (!newColors[bank]) newColors[bank] = getRandomColor();
+      });
+      return newColors;
+    });
+  }, [allRates]);
+
+
   // Transform allRates for Recharts
   const graphData = React.useMemo(() => {
     if (!allRates || allRates.length === 0) return [];
@@ -46,14 +80,31 @@ function App() {
     return Object.values(dateMap).sort((a, b) => new Date(a.date) - new Date(b.date));
   }, [allRates, visibleBanks]);
 
+  // Sell rate graph data
+  const graphDataSell = React.useMemo(() => {
+    if (!allRates || allRates.length === 0) return [];
+    const banks = Array.from(new Set(allRates.map(r => r.bank)));
+    const dateMap = {};
+    allRates.forEach(r => {
+      const date = new Date(r.sync_date).toLocaleDateString();
+      if (!dateMap[date]) dateMap[date] = { date };
+      dateMap[date][r.bank] = r.sell_rate;
+    });
+    return Object.values(dateMap).sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [allRates, visibleBanks]);
+
   // Calculate min/max for Y axis
   const yValues = graphData.flatMap(d =>
     visibleBanks.map(bank => d[bank]).filter(v => typeof v === 'number')
   );
-
+  const yValuesSell = graphDataSell.flatMap(d =>
+    visibleBanks.map(bank => d[bank]).filter(v => typeof v === 'number')
+  );
 
   const minValue = yValues.length ? Math.floor(Math.min(...yValues)) : 0;
   const maxValue = yValues.length ? Math.ceil(Math.max(...yValues)) : 100;
+  const minValueSell = yValuesSell.length ? Math.floor(Math.min(...yValuesSell)) : 0;
+  const maxValueSell = yValuesSell.length ? Math.ceil(Math.max(...yValuesSell)) : 100;
 
 
   const [loading, setLoading] = useState(true);
@@ -139,9 +190,10 @@ function App() {
           {darkMode ? '🌙 Dark Mode' : '☀️ Light Mode'}
         </button>
       </div>
-      <h2 className="mb-4 text-center">DOP/USD Exchange Rates</h2>
+      <h2 className="mb-4 text-center">DOP - USD Exchange Rates</h2>
       {/* Time Series Graph */}
       <div className="mb-4">
+        <h4 className="mb-3 text-center">Historical USD Buy Rates</h4>
         {graphLoading ? (
           <div className="text-center py-3">Loading graph...</div>
         ) : graphError ? (
@@ -175,7 +227,30 @@ function App() {
                 <Tooltip />
                 <Legend />
                 {visibleBanks.map(bank => (
-                  <Line key={bank} type="monotone" dataKey={bank} strokeWidth={2} dot={false} />
+                  <Line key={bank} type="monotone" dataKey={bank} stroke={bankColorsBuy[bank] || '#e74c3c'} strokeWidth={2} dot={false} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </>
+        )}
+      </div>
+      <div className="mb-4">
+        <h4 className="mb-3 text-center">Historical USD Sell Rates</h4>
+        {graphLoading ? (
+          <div className="text-center py-3">Loading graph...</div>
+        ) : graphError ? (
+          <div className="alert alert-danger">{graphError}</div>
+        ) : (
+          <>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={graphDataSell} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis domain={[minValueSell, maxValueSell]} />
+                <Tooltip />
+                <Legend />
+                {visibleBanks.map(bank => (
+                  <Line key={bank} type="monotone" dataKey={bank} stroke={bankColorsSell[bank] || '#3498db'} strokeWidth={2} dot={false} />
                 ))}
               </LineChart>
             </ResponsiveContainer>
