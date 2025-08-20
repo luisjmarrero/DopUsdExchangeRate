@@ -16,7 +16,17 @@ from app.schemas import BankStatusUpdate
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # You can restrict this to ["http://localhost:5174"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 scheduler = BackgroundScheduler()
 tz = zoneinfo.ZoneInfo(DEFAULT_TIMEZONE)
 
