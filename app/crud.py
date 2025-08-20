@@ -20,6 +20,12 @@ def create_rate(bank: str, buy_rate: float, sell_rate: float):
     db.close()
     return db_rate
 
+def get_all_rates_ordered():
+    db = SessionLocal()
+    rates = db.query(ExchangeRateDB).order_by(ExchangeRateDB.sync_date.desc(), ExchangeRateDB.bank.asc()).all()
+    db.close()
+    return rates
+
 def get_latest_rates():
     db = SessionLocal()
     rates = db.query(ExchangeRateDB).order_by(ExchangeRateDB.buy_rate.asc()).all()

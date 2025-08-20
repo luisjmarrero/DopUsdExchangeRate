@@ -98,6 +98,18 @@ def get_rates():
     db.close()
     return latest_rates
 
+@app.get("/rates/all", response_model=List[ExchangeRate])
+def get_all_rates():
+    logger.info("Fetching all rates ordered by sync_date desc, then bank asc...")
+    rates = crud.get_all_rates_ordered()
+    return [ExchangeRate(
+        bank=r.bank,
+        buy_rate=r.buy_rate,
+        sell_rate=r.sell_rate,
+        sync_date=r.sync_date,
+        source=r.source if r.source is not None else ""
+    ) for r in rates]
+
 @app.get("/rates/{bank}", response_model=List[ExchangeRate])
 def get_bank_rates(bank: str):
     if not validate_bank(bank):
