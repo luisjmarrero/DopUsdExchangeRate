@@ -5,3 +5,6 @@ SUPPORTED_BANKS = [
     "APAP",
     "Scotiabank"
 ]
+
+DEFAULT_TIMEZONE = "America/Santo_Domingo"
+

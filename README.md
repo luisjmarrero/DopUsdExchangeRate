@@ -41,6 +41,12 @@ Endpoints use:
 
 Before running the application, you need to install the following system dependencies:
 
+**For Selenium scraping:**
+- You must install Google Chrome or Chromium on your system.
+- On Ubuntu/Debian: `sudo apt-get update && sudo apt-get install -y google-chrome-stable`
+- For Docker, Chrome is installed automatically in the Dockerfile.
+- If you see `Status code was: 127` from ChromeDriver, it means Chrome/Chromium is missing or the driver is not executable. Make sure Chrome is installed and the chromedriver binary is executable (`chmod +x ~/.wdm/drivers/chromedriver/linux64/*/chromedriver`).
+
 **For Debian-based systems (like Ubuntu):**
 ```bash
 sudo apt-get update && sudo apt-get install -y libnss3 google-chrome-stable

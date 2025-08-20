@@ -15,6 +15,5 @@ class ExchangeRateDB(Base):
     bank = Column(String, index=True)
     buy_rate = Column(Float)
     sell_rate = Column(Float)
-    sync_date = Column(DateTime)
+    sync_date = Column(DateTime(timezone=True))
     source = Column(String)
-    disabled = Column(Boolean, default=False)
