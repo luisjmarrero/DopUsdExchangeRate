@@ -17,6 +17,8 @@ import subprocess
 from fastapi.responses import JSONResponse
 import os
 import sys
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -265,3 +267,36 @@ def sell(dop: float = None, usd: float = None):
         elif usd is not None:
             average = {"avg_sell_rate": round(avg_sell_rate, 4), "usd": usd, "dop": round(usd * avg_sell_rate, 2)}
     return {"results": results, "average": average}
+
+# Serve openapi.yaml at /openapi.yaml
+OPENAPI_YAML_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'openapi.yaml'))
+
+@app.get('/openapi.yaml', include_in_schema=False)
+def get_openapi_yaml():
+    return FileResponse(OPENAPI_YAML_PATH, media_type='text/yaml')
+
+# Serve Swagger UI that loads the openapi.yaml
+@app.get('/swagger-external', include_in_schema=False)
+def custom_swagger_ui():
+    html_content = '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Swagger UI - External OpenAPI</title>
+      <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+    </head>
+    <body>
+      <div id="swagger-ui"></div>
+      <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+      <script>
+        window.onload = function() {
+          window.ui = SwaggerUIBundle({
+            url: '/openapi.yaml',
+            dom_id: '#swagger-ui',
+          });
+        };
+      </script>
+    </body>
+    </html>
+    '''
+    return HTMLResponse(content=html_content, status_code=200)
