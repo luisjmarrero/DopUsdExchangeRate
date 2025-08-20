@@ -64,6 +64,80 @@ paths:
                   $ref: '#/components/schemas/ExchangeRate'
         '404':
           description: Bank not supported
+  /rates/all:
+    get:
+      summary: Get all rates with pagination and sorting
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [bank, buy_rate, sell_rate, sync_date, source]
+            default: sync_date
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Paginated list of rates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExchangeRate'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  size:
+                    type: integer
+  /backup:
+    post:
+      summary: Trigger a manual backup of rates to the scripts folder
+      responses:
+        '200':
+          description: Backup created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  file:
+                    type: string
+        '500':
+          description: Backup failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  error:
+                    type: string
   /banks:
     get:
       summary: List supported banks

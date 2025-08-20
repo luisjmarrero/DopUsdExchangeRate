@@ -34,6 +34,9 @@ Endpoints use:
  - `POST /banks/{bank}/status`: Enable or disable a bank
  - `GET /buy?dop=<amount>` : Convert DOP to USD for each bank and show calculated average
  - `GET /sell?usd=<amount>` : Convert USD to DOP for each bank and show calculated average
+ - `GET /rates/all` : Get all rates with pagination and sorting
+ - `POST /backup` : Trigger a manual backup of rates to the scripts folder
+ - `GET /health` : Health check endpoint
 
 ## Development Setup
 
