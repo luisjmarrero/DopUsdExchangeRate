@@ -5,6 +5,22 @@ import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from 'recharts';
 
 function App() {
+  // Dark mode state
+  const [darkMode, setDarkMode] = useState(() => {
+    // Try to read from localStorage
+    const stored = window.localStorage.getItem('darkMode');
+    return stored === 'true';
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+    window.localStorage.setItem('darkMode', darkMode);
+  }, [darkMode]);
+
   const [rates, setRates] = useState([]);
   const [allRates, setAllRates] = useState([]);
   const [graphLoading, setGraphLoading] = useState(true);
@@ -115,6 +131,14 @@ function App() {
 
   return (
     <div className="container py-5">
+      <div className="d-flex justify-content-end mb-3">
+        <button
+          className="btn btn-outline-primary"
+          onClick={() => setDarkMode((d) => !d)}
+        >
+          {darkMode ? '🌙 Dark Mode' : '☀️ Light Mode'}
+        </button>
+      </div>
       <h2 className="mb-4 text-center">DOP/USD Exchange Rates</h2>
       {/* Time Series Graph */}
       <div className="mb-4">

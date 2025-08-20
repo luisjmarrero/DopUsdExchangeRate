@@ -5,6 +5,64 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--background-color);
+  color: var(--text-color);
+}
+
+:root {
+  --background-color: #f8f9fa;
+  --text-color: #212529;
+  --primary-color: #61dafb;
+  --header-bg: #282c34;
+  --header-text: #fff;
+}
+
+body.dark-mode {
+  --background-color: #181a1b;
+  --text-color: #e8e6e3;
+  --primary-color: #61dafb;
+  --header-bg: #222326;
+  --header-text: #e8e6e3;
+}
+
+/* Table overrides for theme */
+.table,
+.table-bordered,
+.table-hover {
+  background-color: var(--background-color) !important;
+  color: var(--text-color) !important;
+}
+
+.table-primary {
+  background-color: var(--header-bg) !important;
+  color: var(--header-text) !important;
+}
+
+.table th,
+.table td {
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+/* Button overrides for dark mode */
+body.dark-mode .btn,
+body.dark-mode .btn-primary,
+body.dark-mode .btn-outline-primary,
+body.dark-mode .page-link {
+  background-color: var(--header-bg) !important;
+  color: var(--header-text) !important;
+  border-color: var(--primary-color) !important;
+}
+body.dark-mode .btn-outline-primary {
+  background-color: transparent !important;
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+body.dark-mode .btn:disabled,
+body.dark-mode .page-link:disabled {
+  background-color: #444 !important;
+  color: #aaa !important;
+  border-color: #444 !important;
 }
 
 code {
