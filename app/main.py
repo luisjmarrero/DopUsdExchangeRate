@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -11,6 +10,8 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
 import app.scraper as scraper
+import app.crud as crud
+from app.schemas import BankStatusUpdate
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -119,6 +120,14 @@ def get_banks():
 	db.close()
 	return {"banks": [{"name": b.name, "disabled": b.disabled} for b in banks]}
 
+@app.post("/banks/{bank}/status")
+def update_bank_status(bank: str, status: BankStatusUpdate):
+    if not validate_bank(bank):
+        raise HTTPException(status_code=404, detail="Bank not supported")
+    db_bank = crud.update_bank_status(bank_name=bank, disabled=status.disabled)
+    if not db_bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    return {"bank": db_bank.name, "disabled": db_bank.disabled}
 
 
 # New /buy endpoint (GET)

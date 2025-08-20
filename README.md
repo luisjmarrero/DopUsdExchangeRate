@@ -31,46 +31,63 @@ Endpoints use:
  - `GET /rates` : Get all latest rates, ordered by cheapest buy rate
  - `GET /rates/{bank}` : Get latest rates for a specific bank
  - `GET /banks` : List supported banks
+ - `POST /banks/{bank}/status`: Enable or disable a bank
  - `GET /buy?dop=<amount>` : Convert DOP to USD for each bank and show calculated average
  - `GET /sell?usd=<amount>` : Convert USD to DOP for each bank and show calculated average
 
 ## Development Setup
 
-### 1. Clone the repo
+### 1. System Dependencies
+
+Before running the application, you need to install the following system dependencies:
+
+**For Debian-based systems (like Ubuntu):**
+```bash
+sudo apt-get update && sudo apt-get install -y libnss3 google-chrome-stable
+```
+
+### 2. Clone the repo
 ```
 git clone <repo-url>
 cd DopUsdExchangeRate
 ```
 
 
-### 2. Create and activate a virtual environment
+### 3. Create and activate a virtual environment
 ```
 python3 -m venv venv
 source venv/bin/activate
 ```
 
 
-### 3. Create your .env file (for local development)
+### 4. Create your .env file (for local development)
 Copy the sample file and edit as needed:
 ```
 cp .env.sample .env
 # Edit .env if you need to change database credentials or host
 ```
 
-### 4. Docker Compose environment
+### 5. Docker Compose environment
 Docker Compose uses `.env.docker` for environment variables. You do not need to create this file unless you want to change the default Docker database settings.
 
-### 4. Install dependencies
+### 6. Install dependencies
 ```
 pip install -r requirements.txt
 ```
 
-### 5. Run locally (requires PostgreSQL running)
+### 7. Database Migrations
+
+To create the database tables and seed the initial data, run the following command:
+```bash
+source venv/bin/activate && python -m app.migrations
+```
+
+### 8. Run locally (requires PostgreSQL running)
 ```
 uvicorn app.main:app --reload
 ```
 
-### 5. Run with Docker Compose
+### 9. Run with Docker Compose
 ```
 docker-compose up --build
 ```

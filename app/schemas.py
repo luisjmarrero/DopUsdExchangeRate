@@ -14,3 +14,6 @@ class Rate(BaseModel):
     sync_date: datetime
     source: str
     disabled: bool = False
+
+class BankStatusUpdate(BaseModel):
+    disabled: bool

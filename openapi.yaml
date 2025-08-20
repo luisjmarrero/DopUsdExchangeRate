@@ -79,6 +79,38 @@ paths:
                     type: array
                     items:
                       type: string
+  /banks/{bank}/status:
+    post:
+      summary: Enable or disable a bank
+      parameters:
+        - name: bank
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                disabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Bank status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bank:
+                    type: string
+                  disabled:
+                    type: boolean
+        '404':
+          description: Bank not found
   /buy:
     get:
       summary: Convert DOP to USD for each bank using the bank's "venta" (sell) rate, and show calculated average

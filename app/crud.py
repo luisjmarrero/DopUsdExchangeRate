@@ -1,5 +1,4 @@
-
-from app.models_db import ExchangeRateDB
+from app.models_db import ExchangeRateDB, BankDB
 from app.database import SessionLocal
 from datetime import datetime
 
@@ -22,3 +21,13 @@ def get_latest_rates():
 	rates = db.query(ExchangeRateDB).order_by(ExchangeRateDB.buy_rate.asc()).all()
 	db.close()
 	return rates
+
+def update_bank_status(bank_name: str, disabled: bool):
+    db = SessionLocal()
+    bank = db.query(BankDB).filter(BankDB.name == bank_name).first()
+    if bank:
+        bank.disabled = disabled
+        db.commit()
+        db.refresh(bank)
+    db.close()
+    return bank

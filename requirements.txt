@@ -5,3 +5,7 @@ psycopg2-binary
 pydantic
 requests
 python-dotenv
+apscheduler
+beautifulsoup4
+selenium
+webdriver-manager
