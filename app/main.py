@@ -13,6 +13,10 @@ import zoneinfo
 import app.scraper as scraper
 import app.crud as crud
 from app.schemas import BankStatusUpdate
+import subprocess
+from fastapi.responses import JSONResponse
+import os
+import sys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,8 +31,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-scheduler = BackgroundScheduler()
 tz = zoneinfo.ZoneInfo(DEFAULT_TIMEZONE)
+scheduler = BackgroundScheduler(timezone=tz)
 
 @app.get("/health")
 def health():
@@ -73,6 +77,32 @@ def sync_rates_job():
             logger.warning(f"No rates found for {bank.name}")
     logger.info(f"Sync job complete. Banks synced: {len(results)}")
 
+def backup_rates_job():
+    now = datetime.now(tz)
+    backup_filename = f"rates_bk_{now.month:02d}_{now.day:02d}_{now.year}.sql"
+    backup_path = os.path.join('/scripts', backup_filename)
+    script_path = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'export_rates_seed.py')
+    try:
+        result = subprocess.run([
+            sys.executable, script_path, '--output', backup_path
+        ], capture_output=True, text=True)
+        if result.returncode != 0:
+            logger.error(f"Backup failed: {result.stderr}")
+            return False, result.stderr
+        logger.info(f"Backup created: {backup_path}")
+        return True, backup_path
+    except Exception as e:
+        logger.error(f"Backup exception: {e}")
+        return False, str(e)
+
+@app.post("/backup")
+def trigger_backup():
+    success, info = backup_rates_job()
+    if success:
+        return JSONResponse(content={"status": "success", "file": info})
+    else:
+        return JSONResponse(content={"status": "error", "error": info}, status_code=500)
+
 @app.post("/sync")
 async def sync_rates(background_tasks: BackgroundTasks):
     background_tasks.add_task(sync_rates_job)
@@ -80,7 +110,8 @@ async def sync_rates(background_tasks: BackgroundTasks):
 
 # Schedule sync_rates to run daily at 8:00am
 def start_scheduler():
-    scheduler.add_job(sync_rates_job, 'cron', hour=8, minute=0)
+    scheduler.add_job(sync_rates_job, 'cron', hour=8, minute=0, timezone=tz)
+    scheduler.add_job(backup_rates_job, 'cron', hour=7, minute=0, timezone=tz)
     scheduler.start()
 
 @app.on_event("startup")

@@ -125,7 +125,7 @@ function App() {
       let totalPages = 1;
       try {
         do {
-          const res = await fetch(`http://localhost:8000/rates/all?page=${page}&size=${size}&sort_by=sync_date&order=asc`);
+          const res = await fetch(`${process.env.REACT_APP_API_URL}/rates/all?page=${page}&size=${size}&sort_by=sync_date&order=asc`);
           if (!res.ok) throw new Error('Network response was not ok');
           const data = await res.json();
           all = all.concat(data.items);
@@ -150,7 +150,7 @@ function App() {
       sort_by: sortConfig.key,
       order: sortConfig.direction
     });
-    fetch(`http://localhost:8000/rates/all?${params.toString()}`)
+    fetch(`${process.env.REACT_APP_API_URL}/rates/all?${params.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();

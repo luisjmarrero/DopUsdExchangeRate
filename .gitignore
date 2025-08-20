@@ -29,3 +29,5 @@ htmlcov/
 .pytest_cache/
 
 node_modules/
+
+scripts/rates_bk_*.sql
