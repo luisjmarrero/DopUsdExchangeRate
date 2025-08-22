@@ -35,9 +35,16 @@ def export_latest_rates(output_file=None):
             bank_escaped = rate.bank.replace("'", "''")
             source_escaped = (rate.source or '').replace("'", "''")
             sync_date_str = rate.sync_date.strftime('%Y-%m-%d %H:%M:%S%z')
+            # Handle None values explicitly to avoid environment-specific issues
+            sell_change_val = rate.sell_change
+            buy_change_val = rate.buy_change
+
+            sell_change_sql = 'NULL' if sell_change_val is None else str(sell_change_val)
+            buy_change_sql = 'NULL' if buy_change_val is None else str(buy_change_val)
+
             insert_sql = (
                 f"INSERT INTO exchange_rates (id, bank, buy_rate, sell_rate, sync_date, source, sell_change, buy_change) VALUES (\n"
-                f"    {rate.id}, '{bank_escaped}', {rate.buy_rate}, {rate.sell_rate}, '{sync_date_str}', '{source_escaped}', {getattr(rate, 'sell_change', 'NULL')}, {getattr(rate, 'buy_change', 'NULL')});\n"
+                f"    {rate.id}, '{bank_escaped}', {rate.buy_rate}, {rate.sell_rate}, '{sync_date_str}', '{source_escaped}', {sell_change_sql}, {buy_change_sql});\n"
             )
             f.write(insert_sql)
     print(f"Exported {len(latest_rates)} rates to {output_file}")

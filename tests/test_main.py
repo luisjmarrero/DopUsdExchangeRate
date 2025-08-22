@@ -8,7 +8,8 @@ client = TestClient(app)
 def test_get_all_rates_ordered():
     response = client.get("/rates/all")
     assert response.status_code == 200
-    rates = response.json()
+    data = response.json()
+    rates = data["items"]  # Access the actual list of rates from paginated response
     # Check ordering: sync_date descending, then bank ascending
     if rates:
         sync_dates = [r['sync_date'] for r in rates]

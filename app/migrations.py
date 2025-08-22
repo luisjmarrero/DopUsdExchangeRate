@@ -52,6 +52,7 @@ def backfill_change_columns():
             ) sub
             WHERE exchange_rates.id = sub.id;
         '''))
+        conn.commit()  # Commit the transaction
         print("Backfilled sell_change and buy_change columns.")
 
 def create_banks_table_and_seed():

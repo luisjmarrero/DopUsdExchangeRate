@@ -9,8 +9,8 @@ class ExchangeRate(BaseModel):
     sync_date: datetime
     source: str
     disabled: bool = False
-    sell_change: float = None
-    buy_change: float = None
+    sell_change: float | None = None
+    buy_change: float | None = None
 
 class ExchangeRateList(BaseModel):
     rates: List[ExchangeRate]

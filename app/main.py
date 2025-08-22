@@ -20,7 +20,10 @@ import sys
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 
-logging.basicConfig(level=logging.INFO)
+def safe_float(value, default=0.0):
+    """Helper function to convert None to default float value"""
+    return default if value is None else value
+
 logger = logging.getLogger(__name__)
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -51,45 +54,59 @@ def sync_rates_job():
     logger.info("Starting sync_rates job...")
     results = []
     db = SessionLocal()
-    from app.models_db import BankDB
-    enabled_banks = db.query(BankDB).filter(BankDB.disabled == False).all()
-    db.close()
-    for bank in enabled_banks:
-        # Check latest rate for this bank
-        latest_rate = db.query(ExchangeRateDB).filter(ExchangeRateDB.bank == bank.name).order_by(ExchangeRateDB.sync_date.desc()).first()
-        if latest_rate and (datetime.now(tz) - latest_rate.sync_date).total_seconds() < 3600:
-            logger.info(f"Skipping {bank.name}: latest rate is less than an hour old.")
-            continue
-        logger.info(f"Syncing rates for {bank.name}...")
-        rate_data = scraper.get_bank_rate(bank.name)
-        if rate_data:
-            buy_rate = rate_data["buy_rate"]
-            sell_rate = rate_data["sell_rate"]
-            sell_change = None
-            buy_change = None
-            if latest_rate:
-                sell_change = sell_rate - latest_rate.sell_rate
-                buy_change = buy_rate - latest_rate.buy_rate
-            new_rate = ExchangeRateDB(
-                bank=bank.name,
-                buy_rate=buy_rate,
-                sell_rate=sell_rate,
-                sell_change=sell_change,
-                buy_change=buy_change,
-                source=rate_data["source"],
-                sync_date=datetime.now(tz)
-            )
-            db.add(new_rate)
-            db.commit()
-            logger.info(f"Saved rates for {bank.name}: buy={buy_rate}, sell={sell_rate}, buy_change={buy_change}, sell_change={sell_change}")
-        else:
-            logger.warning(f"No rates found for {bank.name}")
-    logger.info(f"Sync job complete. Banks synced: {len(results)}")
+    try:
+        from app.models_db import BankDB
+        enabled_banks = db.query(BankDB).filter(BankDB.disabled == False).all()
+
+        for bank in enabled_banks:
+            try:
+                # Check latest rate for this bank
+                latest_rate = db.query(ExchangeRateDB).filter(ExchangeRateDB.bank == bank.name).order_by(ExchangeRateDB.sync_date.desc()).first()
+                if latest_rate and (datetime.now(tz) - latest_rate.sync_date).total_seconds() < 3600:
+                    logger.info(f"Skipping {bank.name}: latest rate is less than an hour old.")
+                    continue
+
+                logger.info(f"Syncing rates for {bank.name}...")
+                rate_data = scraper.get_bank_rate(bank.name)
+                if rate_data:
+                    buy_rate = rate_data["buy_rate"]
+                    sell_rate = rate_data["sell_rate"]
+                    sell_change = None
+                    buy_change = None
+                    if latest_rate:
+                        sell_change = sell_rate - latest_rate.sell_rate
+                        buy_change = buy_rate - latest_rate.buy_rate
+
+                    new_rate = ExchangeRateDB(
+                        bank=bank.name,
+                        buy_rate=buy_rate,
+                        sell_rate=sell_rate,
+                        sell_change=sell_change,
+                        buy_change=buy_change,
+                        source=rate_data["source"],
+                        sync_date=datetime.now(tz)
+                    )
+                    db.add(new_rate)
+                    db.commit()
+                    results.append(bank.name)
+                    logger.info(f"Saved rates for {bank.name}: buy={buy_rate}, sell={sell_rate}, buy_change={buy_change}, sell_change={sell_change}")
+                else:
+                    logger.warning(f"No rates found for {bank.name}")
+            except Exception as e:
+                logger.error(f"Error processing bank {bank.name}: {e}")
+                db.rollback()  # Rollback on error to maintain session integrity
+                continue
+
+        logger.info(f"Sync job complete. Banks synced: {len(results)}")
+    except Exception as e:
+        logger.error(f"Critical error in sync_rates_job: {e}")
+    finally:
+        db.close()
 
 def backup_rates_job():
     now = datetime.now(tz)
     backup_filename = f"rates_bk_{now.month:02d}_{now.day:02d}_{now.year}.sql"
-    backup_path = os.path.join('/scripts', backup_filename)
+    backup_path = os.path.join(os.path.dirname(__file__), '..', 'scripts', backup_filename)
     script_path = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'export_rates_seed.py')
     try:
         result = subprocess.run([
@@ -139,8 +156,8 @@ def get_rates():
                 bank=rate.bank,
                 buy_rate=rate.buy_rate,
                 sell_rate=rate.sell_rate,
-                sell_change=rate.sell_change,
-                buy_change=rate.buy_change,
+                sell_change=safe_float(rate.sell_change),
+                buy_change=safe_float(rate.buy_change),
                 sync_date=rate.sync_date,
                 source=rate.source if rate.source is not None else ""
             ))
@@ -161,8 +178,8 @@ def get_all_rates(page: int = 1, size: int = 10, sort_by: str = 'sync_date', ord
         bank=r.bank,
         buy_rate=r.buy_rate,
         sell_rate=r.sell_rate,
-        sell_change=r.sell_change,
-        buy_change=r.buy_change,
+        sell_change=safe_float(r.sell_change),
+        buy_change=safe_float(r.buy_change),
         sync_date=r.sync_date,
         source=r.source if r.source is not None else ""
     ) for r in rates]
@@ -182,8 +199,8 @@ def get_bank_rates(bank: str):
         bank=r.bank,
         buy_rate=r.buy_rate,
         sell_rate=r.sell_rate,
-        sell_change=r.sell_change,
-        buy_change=r.buy_change,
+        sell_change=safe_float(r.sell_change),
+        buy_change=safe_float(r.buy_change),
         sync_date=r.sync_date,
         source=r.source if r.source is not None else ""
     ) for r in rates]
