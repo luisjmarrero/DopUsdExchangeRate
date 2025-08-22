@@ -21,6 +21,11 @@ LOGGING_CONFIG = {
             'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S %Z',
         },
+        'access': {
+            'class': 'app.logging_config.ASTFormatter',
+            'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S %Z',
+        },
     },
     'handlers': {
         'console': {
@@ -34,10 +39,20 @@ LOGGING_CONFIG = {
             'level': 'INFO',
             'formatter': 'detailed',
         },
+        'access': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'formatter': 'access',
+        },
     },
     'loggers': {
         '': {
             'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'uvicorn.access': {
+            'handlers': ['access'],
             'level': 'INFO',
             'propagate': False,
         },
