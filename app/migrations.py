@@ -1,41 +1,44 @@
 
+import logging
 from app.constants import SUPPORTED_BANKS
 from app.models_db import BankDB
 from app.database import engine, Base
 from sqlalchemy import text
+
+logger = logging.getLogger(__name__)
 
 def add_source_column():
     with engine.connect() as conn:
         result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='exchange_rates' AND column_name='source'"))
         if not result.fetchone():
             conn.execute(text("ALTER TABLE exchange_rates ADD COLUMN source VARCHAR"))
-            print("Added 'source' column to exchange_rates table.")
+            logger.info("Added 'source' column to exchange_rates table.")
         else:
-            print("'source' column already exists.")
+            logger.info("'source' column already exists.")
 
 def add_disabled_column():
     with engine.connect() as conn:
         result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='exchange_rates' AND column_name='disabled'"))
         if not result.fetchone():
             conn.execute(text("ALTER TABLE exchange_rates ADD COLUMN disabled BOOLEAN DEFAULT FALSE"))
-            print("Added 'disabled' column to exchange_rates table.")
+            logger.info("Added 'disabled' column to exchange_rates table.")
         else:
-            print("'disabled' column already exists.")
+            logger.info("'disabled' column already exists.")
 
 def add_change_columns():
     with engine.connect() as conn:
         result_sell = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='exchange_rates' AND column_name='sell_change'"))
         if not result_sell.fetchone():
             conn.execute(text("ALTER TABLE exchange_rates ADD COLUMN sell_change FLOAT"))
-            print("Added 'sell_change' column to exchange_rates table.")
+            logger.info("Added 'sell_change' column to exchange_rates table.")
         else:
-            print("'sell_change' column already exists.")
+            logger.info("'sell_change' column already exists.")
         result_buy = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='exchange_rates' AND column_name='buy_change'"))
         if not result_buy.fetchone():
             conn.execute(text("ALTER TABLE exchange_rates ADD COLUMN buy_change FLOAT"))
-            print("Added 'buy_change' column to exchange_rates table.")
+            logger.info("Added 'buy_change' column to exchange_rates table.")
         else:
-            print("'buy_change' column already exists.")
+            logger.info("'buy_change' column already exists.")
 
 def backfill_change_columns():
     with engine.connect() as conn:
@@ -53,7 +56,7 @@ def backfill_change_columns():
             WHERE exchange_rates.id = sub.id;
         '''))
         conn.commit()  # Commit the transaction
-        print("Backfilled sell_change and buy_change columns.")
+        logger.info("Backfilled sell_change and buy_change columns.")
 
 def create_banks_table_and_seed():
     BankDB.__table__.create(bind=engine, checkfirst=True)
@@ -68,7 +71,7 @@ def create_banks_table_and_seed():
     session.close()
 
 if __name__ == "__main__":
-    print("Connecting to:", engine.url)
+    logger.info(f"Connecting to: {engine.url}")
     Base.metadata.create_all(bind=engine)
     add_source_column()
     add_disabled_column()

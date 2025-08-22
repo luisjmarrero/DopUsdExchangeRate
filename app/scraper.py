@@ -8,7 +8,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def get_bank_rate(bank: str):

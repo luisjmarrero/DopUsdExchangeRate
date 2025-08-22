@@ -20,6 +20,10 @@ import sys
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 
+# Setup centralized logging with Santo Domingo timezone
+from app.logging_config import setup_logging
+setup_logging()
+
 def safe_float(value, default=0.0):
     """Helper function to convert None to default float value"""
     return default if value is None else value

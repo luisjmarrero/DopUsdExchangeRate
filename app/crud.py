@@ -1,26 +1,34 @@
+import logging
 from app.models_db import ExchangeRateDB, BankDB
 from app.database import SessionLocal
 from datetime import datetime
 import zoneinfo
 from app.constants import DEFAULT_TIMEZONE
 
+logger = logging.getLogger(__name__)
 tz = zoneinfo.ZoneInfo(DEFAULT_TIMEZONE)
 
 def create_rate(bank: str, buy_rate: float, sell_rate: float, buy_change: float = None, sell_change: float = None):
     db = SessionLocal()
-    db_rate = ExchangeRateDB(
-        bank=bank,
-        buy_rate=buy_rate,
-        sell_rate=sell_rate,
-        buy_change=buy_change,
-        sell_change=sell_change,
-        sync_date=datetime.now(tz)
-    )
-    db.add(db_rate)
-    db.commit()
-    db.refresh(db_rate)
-    db.close()
-    return db_rate
+    try:
+        db_rate = ExchangeRateDB(
+            bank=bank,
+            buy_rate=buy_rate,
+            sell_rate=sell_rate,
+            buy_change=buy_change,
+            sell_change=sell_change,
+            sync_date=datetime.now(tz)
+        )
+        db.add(db_rate)
+        db.commit()
+        db.refresh(db_rate)
+        logger.info(f"Created rate for {bank}: buy={buy_rate}, sell={sell_rate}")
+        return db_rate
+    except Exception as e:
+        logger.error(f"Error creating rate for {bank}: {e}")
+        raise
+    finally:
+        db.close()
 
 def get_all_rates_ordered(sort_by: str = 'sync_date', order: str = 'desc'):
     db = SessionLocal()
