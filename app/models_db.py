@@ -17,3 +17,5 @@ class ExchangeRateDB(Base):
     sell_rate = Column(Float)
     sync_date = Column(DateTime(timezone=True))
     source = Column(String)
+    sell_change = Column(Float, nullable=True)
+    buy_change = Column(Float, nullable=True)

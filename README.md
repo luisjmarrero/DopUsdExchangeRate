@@ -16,11 +16,17 @@ A FastAPI-based service to fetch and calculate USD/DOP exchange rates from major
 - Stores rates in PostgreSQL
 - Endpoints for syncing, querying, and calculating rates
 - Dockerized for easy deployment
+- Tracks rate changes: `sell_change` and `buy_change` fields show the difference from the previous rate for each sync
 
 ## Buy/Sell Rate Logic
 For each bank:
 - **Buy Rate**: The rate at which you buy USD from the bank (bank sells USD to you). This is taken from the bank's "venta" (sell) rate.
 - **Sell Rate**: The rate at which you sell USD to the bank (bank buys USD from you). This is taken from the bank's "compra" (buy) rate.
+
+### Rate Change Fields
+- **sell_change**: The difference between the current and previous `sell_rate` for a bank. Calculated on each sync.
+- **buy_change**: The difference between the current and previous `buy_rate` for a bank. Calculated on each sync.
+- These fields are included in API responses and shown in the frontend table.
 
 Endpoints use:
 - `/buy`: Uses the "venta" (sell) rate for each bank to calculate how much USD you get for your DOP.
@@ -37,6 +43,7 @@ Endpoints use:
  - `GET /rates/all` : Get all rates with pagination and sorting
  - `POST /backup` : Trigger a manual backup of rates to the scripts folder
  - `GET /health` : Health check endpoint
+- All rate objects now include `sell_change` and `buy_change` fields, which represent the change from the previous rate for each sync.
 
 ## Development Setup
 

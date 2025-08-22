@@ -61,6 +61,15 @@ function App() {
     });
   }, [allRates]);
 
+  // Fixed stroke colors for specific banks
+  const getStrokeColor = (bank, isSell = false) => {
+    const name = (bank || '').toLowerCase();
+    if (name.includes('bhd')) return 'green';
+    if (name.includes('scotia')) return 'crimson';
+    if (name.includes('banreservas') || name.includes('ban reservas')) return 'turquoise';
+    return isSell ? (bankColorsSell[bank] || '#3498db') : (bankColorsBuy[bank] || '#e74c3c');
+  };
+
 
   // Transform allRates for Recharts
   const graphData = React.useMemo(() => {
@@ -109,7 +118,7 @@ function App() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'bank', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'sync_date', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
@@ -227,7 +236,7 @@ function App() {
                 <Tooltip />
                 <Legend />
                 {visibleBanks.map(bank => (
-                  <Line key={bank} type="monotone" dataKey={bank} stroke={bankColorsBuy[bank] || '#e74c3c'} strokeWidth={2} dot={false} />
+                  <Line key={bank} type="monotone" dataKey={bank} stroke={getStrokeColor(bank, false)} strokeWidth={2} dot={false} />
                 ))}
               </LineChart>
             </ResponsiveContainer>
@@ -250,7 +259,7 @@ function App() {
                 <Tooltip />
                 <Legend />
                 {visibleBanks.map(bank => (
-                  <Line key={bank} type="monotone" dataKey={bank} stroke={bankColorsSell[bank] || '#3498db'} strokeWidth={2} dot={false} />
+                  <Line key={bank} type="monotone" dataKey={bank} stroke={getStrokeColor(bank, true)} strokeWidth={2} dot={false} />
                 ))}
               </LineChart>
             </ResponsiveContainer>
@@ -277,6 +286,12 @@ function App() {
                     <th onClick={() => requestSort('sell_rate')} style={{ cursor: 'pointer' }}>
                       Sell Rate {sortConfig.key === 'sell_rate' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
                     </th>
+                    <th>
+                      Buy Change
+                    </th>
+                    <th>
+                      Sell Change
+                    </th>
                     <th onClick={() => requestSort('sync_date')} style={{ cursor: 'pointer' }}>
                       Sync Date {sortConfig.key === 'sync_date' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}
                     </th>
@@ -288,7 +303,18 @@ function App() {
                       <td>{row.bank}</td>
                       <td>{typeof row.buy_rate === 'number' ? row.buy_rate.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' }) : ''}</td>
                       <td>{typeof row.sell_rate === 'number' ? row.sell_rate.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' }) : ''}</td>
+                      <td>{typeof row.buy_change === 'number' ? (
+                        <span className={row.buy_change > 0 ? 'text-danger' : row.buy_change < 0 ? 'text-success' : ''}>
+                          {row.buy_change > 0 ? '▲' : row.buy_change < 0 ? '▼' : '—'} {Math.abs(row.buy_change).toLocaleString('es-DO', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                        </span>
+                      ) : ''}</td>
+                      <td>{typeof row.sell_change === 'number' ? (
+                        <span className={row.sell_change > 0 ? 'text-success' : row.sell_change < 0 ? 'text-danger' : ''}>
+                          {row.sell_change > 0 ? '▲' : row.sell_change < 0 ? '▼' : '—'} {Math.abs(row.sell_change).toLocaleString('es-DO', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                        </span>
+                      ) : ''}</td>
                       <td>{row.sync_date ? new Date(row.sync_date).toLocaleString() : ''}</td>
+
                     </tr>
                   ))}
                 </tbody>

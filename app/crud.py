@@ -6,12 +6,14 @@ from app.constants import DEFAULT_TIMEZONE
 
 tz = zoneinfo.ZoneInfo(DEFAULT_TIMEZONE)
 
-def create_rate(bank: str, buy_rate: float, sell_rate: float):
+def create_rate(bank: str, buy_rate: float, sell_rate: float, buy_change: float = None, sell_change: float = None):
     db = SessionLocal()
     db_rate = ExchangeRateDB(
         bank=bank,
         buy_rate=buy_rate,
         sell_rate=sell_rate,
+        buy_change=buy_change,
+        sell_change=sell_change,
         sync_date=datetime.now(tz)
     )
     db.add(db_rate)

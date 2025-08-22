@@ -65,16 +65,23 @@ def sync_rates_job():
         if rate_data:
             buy_rate = rate_data["buy_rate"]
             sell_rate = rate_data["sell_rate"]
+            sell_change = None
+            buy_change = None
+            if latest_rate:
+                sell_change = sell_rate - latest_rate.sell_rate
+                buy_change = buy_rate - latest_rate.buy_rate
             new_rate = ExchangeRateDB(
                 bank=bank.name,
                 buy_rate=buy_rate,
                 sell_rate=sell_rate,
+                sell_change=sell_change,
+                buy_change=buy_change,
                 source=rate_data["source"],
                 sync_date=datetime.now(tz)
             )
             db.add(new_rate)
             db.commit()
-            logger.info(f"Saved rates for {bank.name}: buy={buy_rate}, sell={sell_rate}")
+            logger.info(f"Saved rates for {bank.name}: buy={buy_rate}, sell={sell_rate}, buy_change={buy_change}, sell_change={sell_change}")
         else:
             logger.warning(f"No rates found for {bank.name}")
     logger.info(f"Sync job complete. Banks synced: {len(results)}")
@@ -132,6 +139,8 @@ def get_rates():
                 bank=rate.bank,
                 buy_rate=rate.buy_rate,
                 sell_rate=rate.sell_rate,
+                sell_change=rate.sell_change,
+                buy_change=rate.buy_change,
                 sync_date=rate.sync_date,
                 source=rate.source if rate.source is not None else ""
             ))
@@ -152,6 +161,8 @@ def get_all_rates(page: int = 1, size: int = 10, sort_by: str = 'sync_date', ord
         bank=r.bank,
         buy_rate=r.buy_rate,
         sell_rate=r.sell_rate,
+        sell_change=r.sell_change,
+        buy_change=r.buy_change,
         sync_date=r.sync_date,
         source=r.source if r.source is not None else ""
     ) for r in rates]
@@ -171,6 +182,8 @@ def get_bank_rates(bank: str):
         bank=r.bank,
         buy_rate=r.buy_rate,
         sell_rate=r.sell_rate,
+        sell_change=r.sell_change,
+        buy_change=r.buy_change,
         sync_date=r.sync_date,
         source=r.source if r.source is not None else ""
     ) for r in rates]

@@ -36,8 +36,8 @@ def export_latest_rates(output_file=None):
             source_escaped = (rate.source or '').replace("'", "''")
             sync_date_str = rate.sync_date.strftime('%Y-%m-%d %H:%M:%S%z')
             insert_sql = (
-                f"INSERT INTO exchange_rates (id, bank, buy_rate, sell_rate, sync_date, source) VALUES (\n"
-                f"    {rate.id}, '{bank_escaped}', {rate.buy_rate}, {rate.sell_rate}, '{sync_date_str}', '{source_escaped}');\n"
+                f"INSERT INTO exchange_rates (id, bank, buy_rate, sell_rate, sync_date, source, sell_change, buy_change) VALUES (\n"
+                f"    {rate.id}, '{bank_escaped}', {rate.buy_rate}, {rate.sell_rate}, '{sync_date_str}', '{source_escaped}', {getattr(rate, 'sell_change', 'NULL')}, {getattr(rate, 'buy_change', 'NULL')});\n"
             )
             f.write(insert_sql)
     print(f"Exported {len(latest_rates)} rates to {output_file}")
