@@ -172,6 +172,10 @@ def get_rates():
     return latest_rates
 
 from fastapi_pagination import Page, add_pagination, paginate
+from fastapi_pagination.utils import disable_installed_extensions_check
+
+# Disable the extension check warning since we're paginating Pydantic models, not SQLAlchemy queries
+disable_installed_extensions_check()
 
 @app.get("/rates/all", response_model=Page[ExchangeRate])
 def get_all_rates(page: int = 1, size: int = 10, sort_by: str = 'sync_date', order: str = 'desc'):
