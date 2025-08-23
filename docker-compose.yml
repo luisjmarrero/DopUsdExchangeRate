@@ -20,7 +20,8 @@ services:
     ports:
       - "8005:8000"
     volumes:
-      - ./app:/app
+      - ./app:/usr/src/app/app
+      - ./scripts:/usr/src/app/scripts
 
   frontend:
     build:
