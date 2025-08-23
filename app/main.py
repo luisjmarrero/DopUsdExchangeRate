@@ -110,8 +110,8 @@ def sync_rates_job():
 def backup_rates_job():
     now = datetime.now(tz)
     backup_filename = f"rates_bk_{now.month:02d}_{now.day:02d}_{now.year}.sql"
-    backup_path = os.path.join(os.path.dirname(__file__), '..', 'scripts', backup_filename)
-    script_path = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'export_rates_seed.py')
+    backup_path = os.path.join('scripts', backup_filename)
+    script_path = os.path.join('scripts', 'export_rates_seed.py')
     try:
         result = subprocess.run([
             sys.executable, script_path, '--output', backup_path

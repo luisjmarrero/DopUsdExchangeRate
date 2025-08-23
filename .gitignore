@@ -31,3 +31,6 @@ htmlcov/
 node_modules/
 
 scripts/rates_bk_*.sql
+
+# Project files
+UPCOMING_ISSUES.md

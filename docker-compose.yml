@@ -10,7 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      
+
   api:
     build: .
     depends_on:
@@ -18,7 +18,7 @@ services:
     env_file:
       - .env.docker
     ports:
-      - "8000:8000"
+      - "8005:8000"
     volumes:
       - ./app:/app
 
@@ -26,7 +26,7 @@ services:
     build:
       context: ./frontend
       args:
-        REACT_APP_API_URL: http://192.168.1.225:8000
+        REACT_APP_API_URL: http://192.168.1.225:8005
     ports:
       - "3000:80"
     depends_on:
