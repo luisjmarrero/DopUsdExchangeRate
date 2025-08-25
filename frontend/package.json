@@ -16,8 +16,17 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:no-browser": "BROWSER=none react-scripts start",
     "build": "react-scripts build",
+    "build:analyze": "BUNDLE_ANALYZER=true react-scripts build",
+    "build:production": "GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:ci": "react-scripts test --watchAll=false --coverage --ci",
+    "lint": "eslint src --ext .js,.jsx",
+    "lint:fix": "eslint src --ext .js,.jsx --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,css,md}\"",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

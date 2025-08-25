@@ -1,0 +1,112 @@
+.rates-table-container {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.rates-table-container h4 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.bank-info {
+  display: flex;
+  align-items: center;
+}
+
+.bank-logo {
+  font-size: 1.5rem;
+  width: 2rem;
+  text-align: center;
+}
+
+.bank-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.rate-value {
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+.buy-rate {
+  color: var(--success-color);
+}
+
+.sell-rate {
+  color: var(--danger-color);
+}
+
+.change-indicator {
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.change-positive {
+  background-color: var(--success-bg);
+  color: var(--success-color);
+}
+
+.change-negative {
+  background-color: var(--danger-bg);
+  color: var(--danger-color);
+}
+
+.change-neutral {
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: var(--card-bg);
+}
+
+.table thead th {
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+  vertical-align: middle;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.table-hover tbody tr:hover {
+  background-color: var(--hover-bg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .rates-table-container {
+    padding: 1rem;
+  }
+
+  .bank-logo {
+    font-size: 1.25rem;
+    width: 1.5rem;
+  }
+
+  .table th,
+  .table td {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+  }
+}

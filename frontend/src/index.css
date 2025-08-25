@@ -1,28 +1,71 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--background-color);
-  color: var(--text-color);
+  color: var(--text-primary);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 :root {
+  /* Light Mode Colors */
   --background-color: #f8f9fa;
-  --text-color: #212529;
-  --primary-color: #61dafb;
-  --header-bg: #282c34;
-  --header-text: #fff;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --primary-color: #0d6efd;
+  --success-color: #198754;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #0dcaf0;
+
+  /* Backgrounds */
+  --header-bg: #ffffff;
+  --card-bg: #ffffff;
+  --insight-card-bg: #f8f9fa;
+  --hover-bg: #f8f9fa;
+
+  /* Borders and Shadows */
+  --border-color: #dee2e6;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+
+  /* Status Colors */
+  --success-bg: #d1e7dd;
+  --danger-bg: #f8d7da;
+  --warning-bg: #fff3cd;
+  --info-bg: #d1ecf1;
 }
 
 body.dark-mode {
-  --background-color: #181a1b;
-  --text-color: #e8e6e3;
-  --primary-color: #61dafb;
-  --header-bg: #222326;
-  --header-text: #e8e6e3;
+  /* Dark Mode Colors */
+  --background-color: #1a1d21;
+  --text-primary: #e8e6e3;
+  --text-secondary: #adb5bd;
+  --primary-color: #3d8bfd;
+  --success-color: #28a745;
+  --danger-color: #e74c3c;
+  --warning-color: #ffc107;
+  --info-color: #17a2b8;
+
+  /* Backgrounds */
+  --header-bg: #2c3034;
+  --card-bg: #2c3034;
+  --insight-card-bg: #343a40;
+  --hover-bg: #343a40;
+
+  /* Borders and Shadows */
+  --border-color: #495057;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+
+  /* Status Colors */
+  --success-bg: #1e4a2e;
+  --danger-bg: #4a1e1e;
+  --warning-bg: #4a3e1e;
+  --info-bg: #1e3a4a;
 }
 
 /* Table overrides for theme */
@@ -66,6 +109,6 @@ body.dark-mode .page-link:disabled {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }

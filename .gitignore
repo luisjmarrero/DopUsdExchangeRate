@@ -34,3 +34,6 @@ scripts/rates_bk_*.sql
 
 # Project files
 UPCOMING_ISSUES.md
+
+.cursor/
+PRD_AND_TASKS.md

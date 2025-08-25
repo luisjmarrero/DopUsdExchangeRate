@@ -1,0 +1,246 @@
+.historical-table-container {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.table-header h4 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 0;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.sortable-header:hover {
+  background-color: var(--hover-bg);
+}
+
+.sortable-header:active {
+  background-color: var(--insight-card-bg);
+}
+
+.bank-info {
+  display: flex;
+  align-items: center;
+}
+
+.bank-logo {
+  font-size: 1.25rem;
+  width: 2rem;
+  text-align: center;
+}
+
+.bank-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.rate-value {
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+.buy-rate {
+  color: var(--danger-color);
+}
+
+.sell-rate {
+  color: var(--success-color);
+}
+
+.change-indicator {
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.change-positive {
+  background-color: var(--success-bg);
+  color: var(--success-color);
+}
+
+.change-negative {
+  background-color: var(--danger-bg);
+  color: var(--danger-color);
+}
+
+.change-neutral {
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  background-color: var(--card-bg);
+}
+
+.table thead th {
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+  vertical-align: middle;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.table-hover tbody tr:hover {
+  background-color: var(--hover-bg);
+}
+
+/* Pagination */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.pagination-info {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.pagination .page-link {
+  color: var(--primary-color);
+  border-color: var(--border-color);
+  background-color: var(--card-bg);
+}
+
+.pagination .page-link:hover {
+  background-color: var(--hover-bg);
+  border-color: var(--primary-color);
+}
+
+.pagination .page-item.active .page-link {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.pagination .page-item.disabled .page-link {
+  color: var(--text-secondary);
+  background-color: var(--insight-card-bg);
+  border-color: var(--border-color);
+}
+
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.rows-per-page-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.rows-per-page-selector .form-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.rows-per-page-selector .form-select {
+  min-width: 70px;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.rows-per-page-selector span {
+  white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .historical-table-container {
+    padding: 1rem;
+  }
+  
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .table-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .pagination-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .bank-logo {
+    font-size: 1rem;
+    width: 1.5rem;
+  }
+  
+  .table th,
+  .table td {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .table-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .table-actions .btn {
+    width: 100%;
+  }
+  
+  .pagination .page-link {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+  }
+}

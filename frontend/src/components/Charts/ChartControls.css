@@ -1,0 +1,138 @@
+.chart-controls-container {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%;
+}
+
+.controls-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bank-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bank-toggle-item {
+  width: 100%;
+}
+
+.bank-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+  text-align: left;
+  position: relative;
+}
+
+.bank-toggle-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--bank-color);
+  border-radius: 2px;
+}
+
+.bank-toggle-btn.active {
+  border-color: var(--bank-color);
+  background: var(--insight-card-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bank-toggle-btn.inactive {
+  opacity: 0.7;
+  background: var(--insight-card-bg);
+}
+
+.bank-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.bank-toggle-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+}
+
+.bank-logo {
+  font-size: 1.25rem;
+  margin-right: 0.75rem;
+  width: 2rem;
+  text-align: center;
+}
+
+.bank-name {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.toggle-indicator {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.controls-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.controls-actions .btn {
+  flex: 1;
+  min-width: 80px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chart-controls-container {
+    padding: 1rem;
+  }
+  
+  .bank-toggle-btn {
+    padding: 0.5rem;
+  }
+  
+  .bank-logo {
+    font-size: 1rem;
+    width: 1.5rem;
+    margin-right: 0.5rem;
+  }
+  
+  .bank-name {
+    font-size: 0.85rem;
+  }
+  
+  .controls-actions .btn {
+    min-width: 70px;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .controls-actions {
+    flex-direction: column;
+  }
+  
+  .controls-actions .btn {
+    width: 100%;
+  }
+}
