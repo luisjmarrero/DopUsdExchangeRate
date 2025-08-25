@@ -34,6 +34,7 @@ const ExchangeRateCharts = React.memo(() => {
     if (name.includes('bhd')) {return '#198754';} // Green
     if (name.includes('scotia')) {return '#dc3545';} // Red
     if (name.includes('banreservas') || name.includes('ban reservas')) {return '#0dcaf0';} // Cyan
+    if (name.includes('lopez de haro') || name.includes('haro')) {return '#6c757d';} // gray  
     return isSell ? '#dc3545' : '#0d6efd'; // Red for sell, Blue for buy
   }, []);
 

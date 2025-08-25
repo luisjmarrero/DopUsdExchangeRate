@@ -3,7 +3,8 @@ SUPPORTED_BANKS = [
     "Banco Popular",
     "BHD",
     "APAP",
-    "Scotiabank"
+    "Scotiabank",
+    "Banco Lopez de Haro"
 ]
 
 DEFAULT_TIMEZONE = "America/Santo_Domingo"
