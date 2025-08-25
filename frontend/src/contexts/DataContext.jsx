@@ -19,6 +19,7 @@ export const DataProvider = ({ children }) => {
   const [graphError, setGraphError] = useState(null);
   const [visibleBanks, setVisibleBanks] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [bankFavicons, setBankFavicons] = useState({});
 
   // Filter state for historical table
   const [tableFilters, setTableFilters] = useState({
@@ -26,6 +27,33 @@ export const DataProvider = ({ children }) => {
     startDate: null,
     endDate: null,
   });
+
+  // Fetch bank favicons
+  const fetchBankFavicons = useCallback(async () => {
+    try {
+      const apiUrl = `${process.env.REACT_APP_API_URL}/banks`;
+      console.log('Fetching bank favicons from:', apiUrl);
+
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch bank data: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Received bank data:', data);
+
+      // Create a mapping of bank names to favicons
+      const faviconMap = {};
+      data.banks.forEach(bank => {
+        faviconMap[bank.name] = bank.favicon_url;
+      });
+
+      setBankFavicons(faviconMap);
+    } catch (err) {
+      console.error('Error fetching bank favicons:', err);
+      // Don't set error state for favicons, just log it
+    }
+  }, []);
 
   // Fetch current rates
   const fetchCurrentRates = useCallback(async () => {
@@ -192,7 +220,8 @@ export const DataProvider = ({ children }) => {
     console.log('API URL:', process.env.REACT_APP_API_URL);
     fetchCurrentRates();
     fetchAllRates();
-  }, [fetchCurrentRates, fetchAllRates]);
+    fetchBankFavicons();
+  }, [fetchCurrentRates, fetchAllRates, fetchBankFavicons]);
 
   // Auto-refresh every 5 minutes
   useEffect(() => {
@@ -214,6 +243,7 @@ export const DataProvider = ({ children }) => {
     visibleBanks,
     lastUpdated,
     tableFilters,
+    bankFavicons,
 
     // Actions
     fetchCurrentRates,

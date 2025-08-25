@@ -21,6 +21,28 @@
   font-size: 1.5rem;
   width: 2rem;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bank-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.bank-favicon {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+  border-radius: 2px;
+}
+
+.bank-emoji {
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .bank-name {

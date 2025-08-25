@@ -34,8 +34,8 @@ def get_bank_rate(bank: str):
 				if sell_match:
 					sell_rates.append(float(sell_match.group(1).replace(",", ".")))
 			if buy_rates and sell_rates:
-				buy_rate = min(sell_rates)  # Use venta (sell) rate for buying USD
-				sell_rate = max(buy_rates)  # Use compra (buy) rate for selling USD
+				buy_rate = max(sell_rates)  # Use highest venta rate as buy_rate
+				sell_rate = min(buy_rates)  # Use lowest compra rate as sell_rate
 				logger.info(f"Banreservas rates found: buy={buy_rate}, sell={sell_rate}")
 				return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 			else:
@@ -63,8 +63,8 @@ def get_bank_rate(bank: str):
 						buy_rates.append(buy_val)
 						sell_rates.append(sell_val)
 				if buy_rates and sell_rates:
-					buy_rate = min(sell_rates)  # Use venta (sell) rate for buying USD
-					sell_rate = max(buy_rates)  # Use compra (buy) rate for selling USD
+					buy_rate = max(sell_rates)  # Use highest venta rate as buy_rate
+					sell_rate = min(buy_rates)  # Use lowest compra rate as sell_rate
 					logger.info(f"Scotiabank rates found: buy={buy_rate}, sell={sell_rate}")
 					return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 				else:
@@ -113,8 +113,8 @@ def get_bank_rate(bank: str):
 					except Exception:
 						continue
 			if buy_rates and sell_rates:
-				min_buy = min(sell_rates)  # Use venta (sell) rate for buying USD
-				max_sell = max(buy_rates)  # Use compra (buy) rate for selling USD
+				min_buy = max(sell_rates)  # Use highest venta rate as buy_rate
+				max_sell = min(buy_rates)  # Use lowest compra rate as sell_rate
 				logger.info(f"BHD rates found: buy={min_buy}, sell={max_sell}")
 				return min_buy, max_sell
 			logger.warning("Dólares US$ row not found in BHD modal table.")
@@ -125,39 +125,139 @@ def get_bank_rate(bank: str):
 			chrome_options.add_argument('--headless')
 			chrome_options.add_argument('--no-sandbox')
 			chrome_options.add_argument('--disable-dev-shm-usage')
+			chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+			chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 			driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-			url = "https://bhd.com.do/not-found"
+
+			# Try the main page first
+			url = "https://bhd.com.do/"
+			logger.info(f"Trying BHD main page: {url}")
 			driver.get(url)
 			import time
-			time.sleep(2)
+			time.sleep(3)
 			close_overlays(driver)
+
+			# Look for rates directly on the main page first
+			page_text = driver.find_element(By.TAG_NAME, "body").text
+			import re
+			rate_pattern = r'(\d{1,3}(?:[.,]\d{1,4})?)'
+			matches = re.findall(rate_pattern, page_text)
+			potential_rates = [float(match.replace(',', '.')) for match in matches if 50 <= float(match.replace(',', '.')) <= 100]
+
+			if len(potential_rates) >= 2:
+				# For BHD, we need to be more careful about which rate is buy vs sell
+				# Look for patterns where rates appear together
+				page_text = driver.find_element(By.TAG_NAME, "body").text
+				import re
+
+				# Look for USD rates that appear together
+				usd_patterns = [
+					r'USD[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)',
+					r'dólar[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)',
+					r'compra[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)[^\d]*venta[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)',
+					r'venta[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)[^\d]*compra[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)',
+				]
+
+				for pattern in usd_patterns:
+					matches = re.findall(pattern, page_text, re.IGNORECASE)
+					if matches:
+						for match in matches:
+							rate1 = float(match[0].replace(',', '.'))
+							rate2 = float(match[1].replace(',', '.'))
+							if 50 <= rate1 <= 100 and 50 <= rate2 <= 100:
+								# Assume the first rate is sell (venta) and second is buy (compra)
+								sell_rate = min(rate1, rate2)
+								buy_rate = max(rate1, rate2)
+								logger.info(f"BHD rates found on main page (pattern): buy={buy_rate}, sell={sell_rate}")
+								driver.quit()
+								return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
+
+				# If no pattern matches, use the proximity approach
+				sorted_rates = sorted(potential_rates)
+				for i in range(len(sorted_rates) - 1):
+					rate1 = sorted_rates[i]
+					rate2 = sorted_rates[i + 1]
+					if abs(rate1 - rate2) < 5:  # Rates are close to each other
+						sell_rate = min(rate1, rate2)
+						buy_rate = max(rate1, rate2)
+						logger.info(f"BHD rates found on main page (proximity): buy={buy_rate}, sell={sell_rate}")
+						driver.quit()
+						return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
+
+				# Final fallback - but with correct logic
+				buy_rate = max(potential_rates)
+				sell_rate = min(potential_rates)
+				logger.info(f"BHD rates found on main page (fallback): buy={buy_rate}, sell={sell_rate}")
+				driver.quit()
+				return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
+
+			# If not found on main page, try to find and click the button
 			tasas_button = find_tasas_button(driver)
 			if tasas_button:
 				try:
+					# Scroll and wait for element to be clickable
 					driver.execute_script("arguments[0].scrollIntoView(true);", tasas_button)
-					from selenium.webdriver.support.ui import WebDriverWait
-					from selenium.webdriver.support import expected_conditions as EC
-					WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'tasas de cambio')]")))
+					time.sleep(1)
+
+					# Try multiple click methods
+					click_success = False
 					try:
+						# Method 1: Normal click
 						tasas_button.click()
 						logger.info("Clicked 'Tasas de Cambio' button (normal click).")
+						click_success = True
 					except Exception as click_error:
-						logger.warning(f"Normal click failed, trying JS click: {click_error}")
-						driver.execute_script("arguments[0].click();", tasas_button)
-						logger.info("Clicked 'Tasas de Cambio' button (JS click).")
-					time.sleep(2)
-					popup = WebDriverWait(driver, 10).until(
-						EC.presence_of_element_located((By.TAG_NAME, "app-cambio_rate_popup"))
-					)
-					logger.info("Found <app-cambio_rate_popup> element.")
-					buy_rate, sell_rate = extract_rates(popup)
-					driver.quit()
-					if buy_rate and sell_rate:
-						return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
+						logger.warning(f"Normal click failed: {click_error}")
+						try:
+							# Method 2: JavaScript click
+							driver.execute_script("arguments[0].click();", tasas_button)
+							logger.info("Clicked 'Tasas de Cambio' button (JS click).")
+							click_success = True
+						except Exception as js_error:
+							logger.warning(f"JS click also failed: {js_error}")
+
+					if click_success:
+						time.sleep(3)  # Wait for popup to load
+
+						# Try to find the popup
+						try:
+							popup = driver.find_element(By.TAG_NAME, "app-cambio_rate_popup")
+							logger.info("Found <app-cambio_rate_popup> element.")
+							buy_rate, sell_rate = extract_rates(popup)
+							if buy_rate and sell_rate:
+								driver.quit()
+								return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
+						except Exception as popup_error:
+							logger.warning(f"Could not find popup: {popup_error}")
+
 				except Exception as e:
-					logger.error(f"Error clicking 'Tasas de Cambio' button or reading rates: {e}")
+					logger.error(f"Error with button clicking: {e}")
 			else:
-				logger.error("Could not find 'Tasas de Cambio' button by any selector.")
+				logger.warning("Could not find 'Tasas de Cambio' button.")
+
+			# If all else fails, try a direct rates page
+			try:
+				rates_url = "https://bhd.com.do/personas/tasas-de-cambio"
+				logger.info(f"Trying direct rates page: {rates_url}")
+				driver.get(rates_url)
+				time.sleep(3)
+
+				page_text = driver.find_element(By.TAG_NAME, "body").text
+				rate_pattern = r'(\d{1,3}(?:[.,]\d{1,4})?)'
+				matches = re.findall(rate_pattern, page_text)
+				potential_rates = [float(match.replace(',', '.')) for match in matches if 50 <= float(match.replace(',', '.')) <= 100]
+
+				if len(potential_rates) >= 2:
+					buy_rate = max(potential_rates)
+					sell_rate = min(potential_rates)
+					logger.info(f"BHD rates found on direct page: buy={buy_rate}, sell={sell_rate}")
+					driver.quit()
+					return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": rates_url}
+			except Exception as direct_error:
+				logger.warning(f"Direct rates page also failed: {direct_error}")
+
+			logger.error("All BHD scraping methods failed.")
+			driver.quit()
 			driver.quit()
 		except Exception as e:
 			logger.error(f"Error scraping BHD rates: {e}")
@@ -255,24 +355,62 @@ def get_bank_rate(bank: str):
 						sell_rates = [max(potential_rates)]
 
 				if buy_rates and sell_rates:
-					buy_rate = min(buy_rates)  # Bank's sell rate for buying USD
-					sell_rate = max(sell_rates)  # Bank's buy rate for selling USD
+					buy_rate = max(sell_rates)  # Use highest venta rate as buy_rate
+					sell_rate = min(buy_rates)  # Use lowest compra rate as sell_rate
 					logger.info(f"Banco Lopez de Haro rates found: buy={buy_rate}, sell={sell_rate}")
 					return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 				else:
 					logger.warning("Could not extract specific buy/sell rates from Banco Lopez de Haro website.")
 
-			# If no specific section found, try to extract any rates from the page
+			# If no specific section found, try to extract USD rates more precisely
 			page_text = driver.find_element(By.TAG_NAME, "body").text
 			import re
-			rate_pattern = r'(\d{1,3}(?:[.,]\d{1,4})?)'
+
+			# Look for patterns where USD rates appear together
+			usd_patterns = [
+				r'USD[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)',
+				r'dólar[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)',
+				r'DÓLAR[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)',
+				r'compra[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)[^\d]*venta[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)',
+				r'venta[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)[^\d]*compra[^\d]*(\d{1,3}(?:[.,]\d{1,4})?)',
+			]
+
+			for pattern in usd_patterns:
+				matches = re.findall(pattern, page_text, re.IGNORECASE)
+				if matches:
+					for match in matches:
+						rate1 = float(match[0].replace(',', '.'))
+						rate2 = float(match[1].replace(',', '.'))
+						if 50 <= rate1 <= 100 and 50 <= rate2 <= 100:
+							# Assume the first rate is sell (venta) and second is buy (compra)
+							# This is typically the order in Dominican Republic
+							sell_rate = min(rate1, rate2)
+							buy_rate = max(rate1, rate2)
+							logger.info(f"Banco Lopez de Haro rates found (pattern match): buy={buy_rate}, sell={sell_rate}")
+							return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
+
+			# Fallback: look for rates that appear close together in text
+			rate_pattern = r'(\\d{1,3}(?:[.,]\\d{1,4})?)'
 			matches = re.findall(rate_pattern, page_text)
 			potential_rates = [float(match.replace(',', '.')) for match in matches if 50 <= float(match.replace(',', '.')) <= 100]
 
+			# Look for pairs of rates that are close to each other (difference < 5)
 			if len(potential_rates) >= 2:
-				buy_rate = min(potential_rates)
-				sell_rate = max(potential_rates)
-				logger.info(f"Banco Lopez de Haro rates found (generic): buy={buy_rate}, sell={sell_rate}")
+				sorted_rates = sorted(potential_rates)
+				for i in range(len(sorted_rates) - 1):
+					rate1 = sorted_rates[i]
+					rate2 = sorted_rates[i + 1]
+					if abs(rate1 - rate2) < 5:  # Rates are close to each other
+						sell_rate = min(rate1, rate2)
+						buy_rate = max(rate1, rate2)
+						logger.info(f"Banco Lopez de Haro rates found (close rates): buy={buy_rate}, sell={sell_rate}")
+						return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
+
+			# Final fallback - use min/max but log warning
+			if len(potential_rates) >= 2:
+				buy_rate = max(potential_rates)
+				sell_rate = min(potential_rates)
+				logger.warning(f"Banco Lopez de Haro rates found (fallback): buy={buy_rate}, sell={sell_rate}")
 				return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 			else:
 				logger.warning("No suitable exchange rates found on Banco Lopez de Haro website.")
@@ -322,8 +460,8 @@ def get_bank_rate(bank: str):
 			potential_rates = [float(match.replace(',', '.')) for match in matches if 50 <= float(match.replace(',', '.')) <= 100]
 
 			if len(potential_rates) >= 2:
-				buy_rate = min(potential_rates)
-				sell_rate = max(potential_rates)
+				buy_rate = max(potential_rates)  # Use highest rate for buying USD
+				sell_rate = min(potential_rates)  # Use lowest rate for selling USD
 				logger.info(f"Banco Lopez de Haro rates found (requests fallback): buy={buy_rate}, sell={sell_rate}")
 				return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 

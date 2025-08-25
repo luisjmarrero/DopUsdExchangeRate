@@ -6,6 +6,7 @@ class BankDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     disabled = Column(Boolean, default=False)
+    favicon_url = Column(String, nullable=True)
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
 from .database import Base
 

@@ -219,7 +219,7 @@ def get_banks():
     from app.models_db import BankDB
     banks = db.query(BankDB).all()
     db.close()
-    return {"banks": [{"name": b.name, "disabled": b.disabled} for b in banks]}
+    return {"banks": [{"name": b.name, "disabled": b.disabled, "favicon_url": getattr(b, 'favicon_url', None)} for b in banks]}
 
 @app.post("/banks/{bank}/status")
 def update_bank_status(bank: str, status: BankStatusUpdate):
@@ -229,6 +229,24 @@ def update_bank_status(bank: str, status: BankStatusUpdate):
     if not db_bank:
         raise HTTPException(status_code=404, detail="Bank not found")
     return {"bank": db_bank.name, "disabled": db_bank.disabled}
+
+@app.post("/banks/{bank}/favicon")
+def update_bank_favicon(bank: str):
+    if not validate_bank(bank):
+        raise HTTPException(status_code=404, detail="Bank not supported")
+
+    from app.favicon_service import favicon_service
+    success = favicon_service.update_bank_favicon(bank)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update bank favicon")
+
+    return {"bank": bank, "status": "favicon updated"}
+
+@app.post("/banks/favicons/update")
+def update_all_bank_favicons():
+    from app.favicon_service import favicon_service
+    results = favicon_service.update_all_bank_favicons()
+    return {"results": results}
 
 # New /buy endpoint (GET)
 @app.get("/buy")

@@ -3,19 +3,52 @@ import { useData } from '../../contexts/DataContext';
 import './RatesTable.css';
 
 const RatesTable = React.memo(() => {
-  const { rates, loading, error } = useData();
-  const getBankLogo = bankName => {
+  const { rates, loading, error, bankFavicons } = useData();
+
+  const getBankIcon = bankName => {
+    const faviconUrl = bankFavicons[bankName];
+
+    // Determine emoji fallback
     const name = bankName.toLowerCase();
+    let emoji = '🏦'; // default
     if (name.includes('bhd')) {
-      return '🏦';
+      emoji = '🏦';
+    } else if (name.includes('scotia')) {
+      emoji = '🏛️';
+    } else if (name.includes('banreservas') || name.includes('ban reservas')) {
+      emoji = '🏢';
     }
-    if (name.includes('scotia')) {
-      return '🏛️';
+
+    if (faviconUrl) {
+      return (
+        <span className="bank-icon-container">
+          <img
+            src={faviconUrl}
+            alt={`${bankName} logo`}
+            className="bank-favicon"
+            onError={(e) => {
+              // Hide favicon and show emoji on error
+              e.target.style.display = 'none';
+              const emojiSpan = e.target.parentElement.querySelector('.bank-emoji');
+              if (emojiSpan) {
+                emojiSpan.style.display = 'inline';
+              }
+            }}
+            onLoad={(e) => {
+              // Hide emoji when favicon loads successfully
+              const emojiSpan = e.target.parentElement.querySelector('.bank-emoji');
+              if (emojiSpan) {
+                emojiSpan.style.display = 'none';
+              }
+            }}
+          />
+          <span className="bank-emoji" style={{ display: 'none' }}>{emoji}</span>
+        </span>
+      );
     }
-    if (name.includes('banreservas') || name.includes('ban reservas')) {
-      return '🏢';
-    }
-    return '🏦';
+
+    // No favicon available, just show emoji
+    return <span className="bank-emoji">{emoji}</span>;
   };
 
   const formatChange = change => {
@@ -103,7 +136,7 @@ const RatesTable = React.memo(() => {
                 <td>
                   <div className='bank-info'>
                     <span className='bank-logo me-2'>
-                      {getBankLogo(rate.bank)}
+                      {getBankIcon(rate.bank)}
                     </span>
                     <span className='bank-name'>{rate.bank}</span>
                   </div>
