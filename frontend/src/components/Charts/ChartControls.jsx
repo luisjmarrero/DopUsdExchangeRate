@@ -3,15 +3,54 @@ import { useData } from '../../contexts/DataContext';
 import './ChartControls.css';
 
 const ChartControls = React.memo(() => {
-  const { allRates, visibleBanks, toggleBank } = useData();
+  const { allRates, visibleBanks, toggleBank, bankFavicons } = useData();
   const banks = Array.from(new Set(allRates.map((r) => r.bank)));
 
-  const getBankLogo = (bankName) => {
+  const getBankIcon = (bankName) => {
+    const faviconUrl = bankFavicons[bankName];
+
+    // Determine emoji fallback
     const name = bankName.toLowerCase();
-    if (name.includes('bhd')) {return '🏦';}
-    if (name.includes('scotia')) {return '🏛️';}
-    if (name.includes('banreservas') || name.includes('ban reservas')) {return '🏢';}
-    return '🏦';
+    let emoji = '🏦'; // default
+    if (name.includes('bhd')) {
+      emoji = '🏦';
+    } else if (name.includes('scotia')) {
+      emoji = '🏛️';
+    } else if (name.includes('banreservas') || name.includes('ban reservas')) {
+      emoji = '🏢';
+    }
+
+    if (faviconUrl) {
+      return (
+        <span className="bank-icon-container">
+          <img
+            src={faviconUrl}
+            alt={`${bankName} logo`}
+            className="bank-favicon"
+            style={{ width: '16px', height: '16px', marginRight: '4px' }}
+            onError={(e) => {
+              // Hide favicon and show emoji on error
+              e.target.style.display = 'none';
+              const emojiSpan = e.target.parentElement.querySelector('.bank-emoji');
+              if (emojiSpan) {
+                emojiSpan.style.display = 'inline';
+              }
+            }}
+            onLoad={(e) => {
+              // Hide emoji when favicon loads successfully
+              const emojiSpan = e.target.parentElement.querySelector('.bank-emoji');
+              if (emojiSpan) {
+                emojiSpan.style.display = 'none';
+              }
+            }}
+          />
+          <span className="bank-emoji" style={{ display: 'none' }}>{emoji}</span>
+        </span>
+      );
+    }
+
+    // No favicon available, just show emoji
+    return <span className="bank-emoji">{emoji}</span>;
   };
 
   const getBankColor = (bankName) => {
@@ -48,7 +87,7 @@ const ChartControls = React.memo(() => {
                 }}
                 aria-label={`${isVisible ? 'Hide' : 'Show'} ${bank} data`}
               >
-                <span className="bank-logo">{getBankLogo(bank)}</span>
+                 <span className="bank-logo">{getBankIcon(bank)}</span>
                 <span className="bank-name">{bank}</span>
                 <span className="toggle-indicator">
                   {isVisible ? '👁️' : '🙈'}

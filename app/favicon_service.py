@@ -1,6 +1,6 @@
 import requests
 import logging
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 from urllib.parse import urljoin, urlparse
 from app.database import SessionLocal
 from app.models_db import BankDB
@@ -18,7 +18,7 @@ BANK_URLS = {
 }
 
 class FaviconService:
-    """Service for fetching and managing bank favicons"""
+    """Service for fetching and managing bank favicons and images"""
 
     def __init__(self):
         self.session = requests.Session()
@@ -26,14 +26,54 @@ class FaviconService:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         })
 
+    def is_image_url(self, url: str) -> bool:
+        """Check if a URL points to an image file"""
+        if not url:
+            return False
+
+        # Check file extension
+        image_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico']
+        parsed_url = urlparse(url.lower())
+        path = parsed_url.path
+
+        return any(path.endswith(ext) for ext in image_extensions)
+
+    def validate_image_url(self, url: str) -> Tuple[bool, Optional[str]]:
+        """Validate if URL is accessible and is an image"""
+        try:
+            response = self.session.head(url, timeout=5)
+            if response.status_code != 200:
+                return False, None
+
+            content_type = response.headers.get('content-type', '').lower()
+            if content_type.startswith('image/'):
+                return True, content_type
+
+            # If content-type is not available, check URL extension
+            if self.is_image_url(url):
+                return True, 'image/*'
+
+            return False, None
+
+        except Exception as e:
+            logger.warning(f"Error validating image URL {url}: {e}")
+            return False, None
+
     def get_bank_website_url(self, bank_name: str) -> Optional[str]:
         """Get the website URL for a bank"""
         return BANK_URLS.get(bank_name)
 
     def fetch_favicon_url(self, website_url: str) -> Optional[str]:
-        """Fetch favicon URL from a website"""
+        """Fetch favicon URL from a website or use image URL if applicable"""
         try:
-            # First, try the standard favicon location
+            # First, check if the website URL itself is an image
+            if self.is_image_url(website_url):
+                is_valid, content_type = self.validate_image_url(website_url)
+                if is_valid:
+                    logger.info(f"Using website URL as image: {website_url}")
+                    return website_url
+
+            # Try the standard favicon location
             parsed_url = urlparse(website_url)
             favicon_url = f"{parsed_url.scheme}://{parsed_url.netloc}/favicon.ico"
 
@@ -57,8 +97,16 @@ class FaviconService:
                 matches = re.findall(pattern, response.text, re.IGNORECASE)
                 if matches:
                     favicon_url = urljoin(website_url, matches[0])
-                    logger.info(f"Found favicon link: {favicon_url}")
-                    return favicon_url
+                    # Check if the found favicon is actually an image URL
+                    if self.is_image_url(favicon_url):
+                        is_valid, content_type = self.validate_image_url(favicon_url)
+                        if is_valid:
+                            logger.info(f"Found image favicon link: {favicon_url}")
+                            return favicon_url
+                    else:
+                        # Regular favicon, just return it
+                        logger.info(f"Found favicon link: {favicon_url}")
+                        return favicon_url
 
             logger.warning(f"No favicon found for {website_url}")
             return None
@@ -113,6 +161,27 @@ class FaviconService:
         try:
             bank = db.query(BankDB).filter(BankDB.name == bank_name).first()
             return getattr(bank, 'favicon_url', None) if bank else None
+        finally:
+            db.close()
+
+    def set_bank_favicon(self, bank_name: str, favicon_url: str) -> bool:
+        """Manually set favicon URL for a bank (useful for testing image URLs)"""
+        db = SessionLocal()
+        try:
+            bank = db.query(BankDB).filter(BankDB.name == bank_name).first()
+            if not bank:
+                logger.warning(f"Bank {bank_name} not found in database")
+                return False
+
+            setattr(bank, 'favicon_url', favicon_url)
+            db.commit()
+            logger.info(f"Manually set favicon for {bank_name}: {favicon_url}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error setting favicon for {bank_name}: {e}")
+            db.rollback()
+            return False
         finally:
             db.close()
 

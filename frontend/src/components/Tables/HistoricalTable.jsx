@@ -3,7 +3,7 @@ import { useData } from '../../contexts/DataContext';
 import './HistoricalTable.css';
 
 const HistoricalTable = React.memo(() => {
-  const { allRates, filteredAllRates, exportData } = useData();
+  const { allRates, filteredAllRates, exportData, bankFavicons } = useData();
   const data = filteredAllRates;
   const [sortConfig, setSortConfig] = useState({
     key: 'sync_date',
@@ -11,6 +11,62 @@ const HistoricalTable = React.memo(() => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const getBankIcon = bankName => {
+    const faviconUrl = bankFavicons[bankName];
+
+    // Determine emoji fallback
+    const name = bankName.toLowerCase();
+    let emoji = '🏦'; // default
+    if (name.includes('bhd')) {
+      emoji = '🏦';
+    } else if (name.includes('scotia')) {
+      emoji = '🏛️';
+    } else if (name.includes('banreservas') || name.includes('ban reservas')) {
+      emoji = '🏢';
+    }
+
+    // Check if the favicon URL is an image
+    const isImage = faviconUrl && (
+      faviconUrl.toLowerCase().endsWith('.png') ||
+      faviconUrl.toLowerCase().endsWith('.jpg') ||
+      faviconUrl.toLowerCase().endsWith('.jpeg') ||
+      faviconUrl.toLowerCase().endsWith('.gif') ||
+      faviconUrl.toLowerCase().endsWith('.svg') ||
+      faviconUrl.toLowerCase().endsWith('.webp')
+    );
+
+    if (faviconUrl) {
+      return (
+        <span className="bank-icon-container">
+          <img
+            src={faviconUrl}
+            alt={`${bankName} logo`}
+            className={isImage ? "bank-image" : "bank-favicon"}
+            onError={(e) => {
+              // Hide favicon and show emoji on error
+              e.target.style.display = 'none';
+              const emojiSpan = e.target.parentElement.querySelector('.bank-emoji');
+              if (emojiSpan) {
+                emojiSpan.style.display = 'inline';
+              }
+            }}
+            onLoad={(e) => {
+              // Hide emoji when favicon loads successfully
+              const emojiSpan = e.target.parentElement.querySelector('.bank-emoji');
+              if (emojiSpan) {
+                emojiSpan.style.display = 'none';
+              }
+            }}
+          />
+          <span className="bank-emoji" style={{ display: 'none' }}>{emoji}</span>
+        </span>
+      );
+    }
+
+    // No favicon available, just show emoji
+    return <span className="bank-emoji">{emoji}</span>;
+  };
 
   // Sorting function
   const sortedData = useMemo(() => {
@@ -233,16 +289,14 @@ const HistoricalTable = React.memo(() => {
             {currentData.map((row, index) => (
               <tr key={row.id || `${row.bank}-${row.sync_date}-${index}`}>
                 <td>{formatDate(row.sync_date)}</td>
-                <td>
-                  <div className="bank-info">
-                    <span className="bank-logo me-2">
-                      {row.bank?.toLowerCase().includes('bhd') ? '🏦' : 
-                       row.bank?.toLowerCase().includes('scotia') ? '🏛️' : 
-                       row.bank?.toLowerCase().includes('banreservas') ? '🏢' : '🏦'}
-                    </span>
-                    <span className="bank-name">{row.bank}</span>
-                  </div>
-                </td>
+                 <td>
+                   <div className="bank-info">
+                     <span className="bank-logo me-2">
+                       {getBankIcon(row.bank)}
+                     </span>
+                     <span className="bank-name">{row.bank}</span>
+                   </div>
+                 </td>
                 <td className="text-end">
                   <span className="rate-value buy-rate">
                     ${row.buy_rate?.toFixed(2) || 'N/A'}

@@ -3,7 +3,7 @@ import { useData } from '../../contexts/DataContext';
 import './TableFilters.css';
 
 const TableFilters = React.memo(() => {
-  const { allRates, tableFilters, updateTableFilters, clearTableFilters } = useData();
+  const { allRates, tableFilters, updateTableFilters, clearTableFilters, bankFavicons } = useData();
   const [availableBanks, setAvailableBanks] = useState([]);
 
   useEffect(() => {
@@ -38,12 +38,51 @@ const TableFilters = React.memo(() => {
     clearTableFilters();
   };
 
-  const getBankLogo = (bankName) => {
+  const getBankIcon = (bankName) => {
+    const faviconUrl = bankFavicons[bankName];
+
+    // Determine emoji fallback
     const name = bankName.toLowerCase();
-    if (name.includes('bhd')) {return '🏦';}
-    if (name.includes('scotia')) {return '🏛️';}
-    if (name.includes('banreservas') || name.includes('ban reservas')) {return '🏢';}
-    return '🏦';
+    let emoji = '🏦'; // default
+    if (name.includes('bhd')) {
+      emoji = '🏦';
+    } else if (name.includes('scotia')) {
+      emoji = '🏛️';
+    } else if (name.includes('banreservas') || name.includes('ban reservas')) {
+      emoji = '🏢';
+    }
+
+    if (faviconUrl) {
+      return (
+        <span className="bank-icon-container">
+          <img
+            src={faviconUrl}
+            alt={`${bankName} logo`}
+            className="bank-favicon"
+            style={{ width: '16px', height: '16px', marginRight: '4px' }}
+            onError={(e) => {
+              // Hide favicon and show emoji on error
+              e.target.style.display = 'none';
+              const emojiSpan = e.target.parentElement.querySelector('.bank-emoji');
+              if (emojiSpan) {
+                emojiSpan.style.display = 'inline';
+              }
+            }}
+            onLoad={(e) => {
+              // Hide emoji when favicon loads successfully
+              const emojiSpan = e.target.parentElement.querySelector('.bank-emoji');
+              if (emojiSpan) {
+                emojiSpan.style.display = 'none';
+              }
+            }}
+          />
+          <span className="bank-emoji" style={{ display: 'none' }}>{emoji}</span>
+        </span>
+      );
+    }
+
+    // No favicon available, just show emoji
+    return <span className="bank-emoji">{emoji}</span>;
   };
 
   const hasActiveFilters = tableFilters.bank || tableFilters.startDate || tableFilters.endDate;
@@ -68,7 +107,7 @@ const TableFilters = React.memo(() => {
               <option value="all">All Banks</option>
               {availableBanks.map((bank) => (
                 <option key={bank} value={bank}>
-                  {getBankLogo(bank)} {bank}
+                  {bank}
                 </option>
               ))}
             </select>

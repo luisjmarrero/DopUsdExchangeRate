@@ -19,13 +19,23 @@ const RatesTable = React.memo(() => {
       emoji = '🏢';
     }
 
+    // Check if the favicon URL is an image
+    const isImage = faviconUrl && (
+      faviconUrl.toLowerCase().endsWith('.png') ||
+      faviconUrl.toLowerCase().endsWith('.jpg') ||
+      faviconUrl.toLowerCase().endsWith('.jpeg') ||
+      faviconUrl.toLowerCase().endsWith('.gif') ||
+      faviconUrl.toLowerCase().endsWith('.svg') ||
+      faviconUrl.toLowerCase().endsWith('.webp')
+    );
+
     if (faviconUrl) {
       return (
         <span className="bank-icon-container">
           <img
             src={faviconUrl}
             alt={`${bankName} logo`}
-            className="bank-favicon"
+            className={isImage ? "bank-image" : "bank-favicon"}
             onError={(e) => {
               // Hide favicon and show emoji on error
               e.target.style.display = 'none';
