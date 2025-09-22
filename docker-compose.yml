@@ -22,6 +22,7 @@ services:
     volumes:
       - ./app:/usr/src/app/app
       - ./scripts:/usr/src/app/scripts
+      - ./logs:/usr/src/app/logs
 
   frontend:
     build:
