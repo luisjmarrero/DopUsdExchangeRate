@@ -12,6 +12,54 @@
   margin-bottom: 1.5rem;
 }
 
+.monthly-insights-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.bank-selector-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 200px;
+}
+
+.bank-selector-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.bank-selector {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-width: 180px;
+}
+
+.bank-selector:focus {
+  background-color: var(--card-bg);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.bank-selector option {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
 .insight-card {
   background: var(--insight-card-bg);
   border-radius: 6px;
@@ -75,6 +123,21 @@
 @media (max-width: 768px) {
   .monthly-insights-container {
     padding: 1rem;
+  }
+
+  .monthly-insights-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .bank-selector-container {
+    align-items: flex-start;
+    min-width: auto;
+  }
+
+  .bank-selector {
+    min-width: 100%;
   }
 
   .insight-card {

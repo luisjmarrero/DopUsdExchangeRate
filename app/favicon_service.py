@@ -12,7 +12,7 @@ BANK_URLS = {
     "Banreservas": "https://www.banreservas.com/",
     "Scotiabank": "https://do.scotiabank.com/",
     "BHD": "https://bhd.com.do/",
-    "Banco Lopez de Haro": "https://www.blh.com.do/",
+    "Lopez de Haro": "https://www.blh.com.do/",
     "Banco Popular": "https://www.popularenlinea.com/",
     "APAP": "https://www.apap.com.do/"
 }

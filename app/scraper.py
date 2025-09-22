@@ -261,12 +261,12 @@ def get_bank_rate(bank: str):
 			driver.quit()
 		except Exception as e:
 			logger.error(f"Error scraping BHD rates: {e}")
-	if bank == "Banco Lopez de Haro":
-		logger.info("Scraping Banco Lopez de Haro exchange rates...")
+	if bank == "Lopez de Haro":
+		logger.info("Scraping Lopez de Haro exchange rates...")
 		url = "https://www.blh.com.do/"
 
 		# Use Selenium as primary method due to website security measures
-		logger.info("Using Selenium for Banco Lopez de Haro (primary method)...")
+		logger.info("Using Selenium for Lopez de Haro (primary method)...")
 		chrome_options = Options()
 		chrome_options.add_argument('--headless')
 		chrome_options.add_argument('--no-sandbox')
@@ -357,10 +357,10 @@ def get_bank_rate(bank: str):
 				if buy_rates and sell_rates:
 					buy_rate = max(sell_rates)  # Use highest venta rate as buy_rate
 					sell_rate = min(buy_rates)  # Use lowest compra rate as sell_rate
-					logger.info(f"Banco Lopez de Haro rates found: buy={buy_rate}, sell={sell_rate}")
+					logger.info(f"Lopez de Haro rates found: buy={buy_rate}, sell={sell_rate}")
 					return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 				else:
-					logger.warning("Could not extract specific buy/sell rates from Banco Lopez de Haro website.")
+					logger.warning("Could not extract specific buy/sell rates from Lopez de Haro website.")
 
 			# If no specific section found, try to extract USD rates more precisely
 			page_text = driver.find_element(By.TAG_NAME, "body").text
@@ -386,7 +386,7 @@ def get_bank_rate(bank: str):
 							# This is typically the order in Dominican Republic
 							sell_rate = min(rate1, rate2)
 							buy_rate = max(rate1, rate2)
-							logger.info(f"Banco Lopez de Haro rates found (pattern match): buy={buy_rate}, sell={sell_rate}")
+							logger.info(f"Lopez de Haro rates found (pattern match): buy={buy_rate}, sell={sell_rate}")
 							return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 
 			# Fallback: look for rates that appear close together in text
@@ -403,17 +403,17 @@ def get_bank_rate(bank: str):
 					if abs(rate1 - rate2) < 5:  # Rates are close to each other
 						sell_rate = min(rate1, rate2)
 						buy_rate = max(rate1, rate2)
-						logger.info(f"Banco Lopez de Haro rates found (close rates): buy={buy_rate}, sell={sell_rate}")
+						logger.info(f"Lopez de Haro rates found (close rates): buy={buy_rate}, sell={sell_rate}")
 						return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 
 			# Final fallback - use min/max but log warning
 			if len(potential_rates) >= 2:
 				buy_rate = max(potential_rates)
 				sell_rate = min(potential_rates)
-				logger.warning(f"Banco Lopez de Haro rates found (fallback): buy={buy_rate}, sell={sell_rate}")
+				logger.warning(f"Lopez de Haro rates found (fallback): buy={buy_rate}, sell={sell_rate}")
 				return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 			else:
-				logger.warning("No suitable exchange rates found on Banco Lopez de Haro website.")
+				logger.warning("No suitable exchange rates found on Lopez de Haro website.")
 
 			if driver:
 				try:
@@ -422,7 +422,7 @@ def get_bank_rate(bank: str):
 					pass
 
 		except Exception as selenium_error:
-			logger.error(f"Selenium scraping failed for Banco Lopez de Haro: {selenium_error}")
+			logger.error(f"Selenium scraping failed for Lopez de Haro: {selenium_error}")
 			if driver:
 				try:
 					driver.quit()
@@ -431,7 +431,7 @@ def get_bank_rate(bank: str):
 
 		# Final fallback: try requests with different approach
 		try:
-			logger.info("Trying requests fallback for Banco Lopez de Haro...")
+			logger.info("Trying requests fallback for Lopez de Haro...")
 			import urllib3
 			urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -462,12 +462,12 @@ def get_bank_rate(bank: str):
 			if len(potential_rates) >= 2:
 				buy_rate = max(potential_rates)  # Use highest rate for buying USD
 				sell_rate = min(potential_rates)  # Use lowest rate for selling USD
-				logger.info(f"Banco Lopez de Haro rates found (requests fallback): buy={buy_rate}, sell={sell_rate}")
+				logger.info(f"Lopez de Haro rates found (requests fallback): buy={buy_rate}, sell={sell_rate}")
 				return {"buy_rate": buy_rate, "sell_rate": sell_rate, "source": url}
 
 		except Exception as requests_error:
-			logger.error(f"Requests fallback also failed for Banco Lopez de Haro: {requests_error}")
+			logger.error(f"Requests fallback also failed for Lopez de Haro: {requests_error}")
 
-		logger.error("All scraping methods failed for Banco Lopez de Haro")
+		logger.error("All scraping methods failed for Lopez de Haro")
 		return None
 

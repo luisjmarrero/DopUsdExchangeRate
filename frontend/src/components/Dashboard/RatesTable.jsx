@@ -61,7 +61,8 @@ const RatesTable = React.memo(() => {
     return <span className="bank-emoji">{emoji}</span>;
   };
 
-  const formatChange = change => {
+  const formatChange = (change, type = 'buy') => {
+    // If change is falsy (null, undefined, etc.), display as white (N/A)
     if (!change && change !== 0) {
       return (
         <span className="change-indicator change-neutral">
@@ -70,6 +71,7 @@ const RatesTable = React.memo(() => {
       );
     }
 
+    // If change is exactly 0, display as white
     if (change === 0) {
       return (
         <span className="change-indicator change-neutral">
@@ -78,16 +80,27 @@ const RatesTable = React.memo(() => {
       );
     }
 
-    const isPositive = change > 0;
-    const sign = isPositive ? '+' : '';
-    const className = isPositive ? 'change-positive' : 'change-negative';
-
-    return (
-      <span className={`change-indicator ${className}`}>
-        {sign}
-        {change.toFixed(2)}
-      </span>
-    );
+    if (type === 'sell') {
+      // Sell change: green if > 0, red if < 0
+      const isPositive = change > 0;
+      const sign = change > 0 ? '+' : '';
+      const className = isPositive ? 'change-positive' : 'change-negative';
+      return (
+        <span className={`change-indicator ${className}`}>
+          {sign}{change.toFixed(2)}
+        </span>
+      );
+    } else {
+      // Buy change: red if > 0, green if < 0
+      const isPositive = change > 0;
+      const sign = change > 0 ? '+' : '';
+      const className = isPositive ? 'change-negative' : 'change-positive';
+      return (
+        <span className={`change-indicator ${className}`}>
+          {sign}{change.toFixed(2)}
+        </span>
+      );
+    }
   };
 
   if (loading) {
@@ -156,13 +169,13 @@ const RatesTable = React.memo(() => {
                     ${rate.buy_rate?.toFixed(2) || 'N/A'}
                   </span>
                 </td>
-                <td className='text-end'>{formatChange(rate.buy_change)}</td>
+                <td className='text-end'>{formatChange(rate.buy_change, 'buy')}</td>
                 <td className='text-end'>
                   <span className='rate-value sell-rate'>
                     ${rate.sell_rate?.toFixed(2) || 'N/A'}
                   </span>
                 </td>
-                <td className='text-end'>{formatChange(rate.sell_change)}</td>
+                <td className='text-end'>{formatChange(rate.sell_change, 'sell')}</td>
               </tr>
             ))}
           </tbody>

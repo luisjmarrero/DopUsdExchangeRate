@@ -70,32 +70,62 @@ def sync_rates_job():
                     logger.info(f"Skipping {bank.name}: latest rate is less than an hour old.")
                     continue
 
-                logger.info(f"Syncing rates for {bank.name}...")
-                rate_data = scraper.get_bank_rate(bank.name)
-                if rate_data:
-                    buy_rate = rate_data["buy_rate"]
-                    sell_rate = rate_data["sell_rate"]
-                    sell_change = None
-                    buy_change = None
-                    if latest_rate:
-                        sell_change = sell_rate - latest_rate.sell_rate
-                        buy_change = buy_rate - latest_rate.buy_rate
+                current_date = datetime.now(tz).date()
+                if latest_rate and latest_rate.sync_date.date() == current_date:
+                    # Overwrite today's rate
+                    # Get previous rate for change calculation
+                    previous_rate = db.query(ExchangeRateDB).filter(ExchangeRateDB.bank == bank.name, ExchangeRateDB.sync_date < latest_rate.sync_date).order_by(ExchangeRateDB.sync_date.desc()).first()
 
-                    new_rate = ExchangeRateDB(
-                        bank=bank.name,
-                        buy_rate=buy_rate,
-                        sell_rate=sell_rate,
-                        sell_change=sell_change,
-                        buy_change=buy_change,
-                        source=rate_data["source"],
-                        sync_date=datetime.now(tz)
-                    )
-                    db.add(new_rate)
-                    db.commit()
-                    results.append(bank.name)
-                    logger.info(f"Saved rates for {bank.name}: buy={buy_rate}, sell={sell_rate}, buy_change={buy_change}, sell_change={sell_change}")
+                    logger.info(f"Overwriting today's rate for {bank.name}...")
+                    rate_data = scraper.get_bank_rate(bank.name)
+                    if rate_data:
+                        buy_rate = rate_data["buy_rate"]
+                        sell_rate = rate_data["sell_rate"]
+                        sell_change = None
+                        buy_change = None
+                        if previous_rate:
+                            sell_change = sell_rate - previous_rate.sell_rate
+                            buy_change = buy_rate - previous_rate.buy_rate
+
+                        latest_rate.buy_rate = buy_rate
+                        latest_rate.sell_rate = sell_rate
+                        latest_rate.sell_change = sell_change
+                        latest_rate.buy_change = buy_change
+                        latest_rate.source = rate_data["source"]
+                        latest_rate.sync_date = datetime.now(tz)
+                        db.commit()
+                        results.append(bank.name)
+                        logger.info(f"Updated rates for {bank.name}: buy={buy_rate}, sell={sell_rate}, buy_change={buy_change}, sell_change={sell_change}")
+                    else:
+                        logger.warning(f"No rates found for {bank.name}")
                 else:
-                    logger.warning(f"No rates found for {bank.name}")
+                    # Create new rate
+                    logger.info(f"Syncing rates for {bank.name}...")
+                    rate_data = scraper.get_bank_rate(bank.name)
+                    if rate_data:
+                        buy_rate = rate_data["buy_rate"]
+                        sell_rate = rate_data["sell_rate"]
+                        sell_change = None
+                        buy_change = None
+                        if latest_rate:
+                            sell_change = sell_rate - latest_rate.sell_rate
+                            buy_change = buy_rate - latest_rate.buy_rate
+
+                        new_rate = ExchangeRateDB(
+                            bank=bank.name,
+                            buy_rate=buy_rate,
+                            sell_rate=sell_rate,
+                            sell_change=sell_change,
+                            buy_change=buy_change,
+                            source=rate_data["source"],
+                            sync_date=datetime.now(tz)
+                        )
+                        db.add(new_rate)
+                        db.commit()
+                        results.append(bank.name)
+                        logger.info(f"Saved rates for {bank.name}: buy={buy_rate}, sell={sell_rate}, buy_change={buy_change}, sell_change={sell_change}")
+                    else:
+                        logger.warning(f"No rates found for {bank.name}")
             except Exception as e:
                 logger.error(f"Error processing bank {bank.name}: {e}")
                 db.rollback()  # Rollback on error to maintain session integrity
@@ -138,9 +168,11 @@ async def sync_rates(background_tasks: BackgroundTasks):
     background_tasks.add_task(sync_rates_job)
     return {"status": "accepted"}
 
-# Schedule sync_rates to run daily at 8:00am
+# Schedule sync_rates to run daily at 9:00am, 12:00pm, 2:00pm
 def start_scheduler():
-    scheduler.add_job(sync_rates_job, 'cron', hour=8, minute=0, timezone=tz)
+    scheduler.add_job(sync_rates_job, 'cron', hour=9, minute=0, timezone=tz)
+    scheduler.add_job(sync_rates_job, 'cron', hour=12, minute=0, timezone=tz)
+    scheduler.add_job(sync_rates_job, 'cron', hour=14, minute=0, timezone=tz)
     scheduler.add_job(backup_rates_job, 'cron', hour=7, minute=0, timezone=tz)
     scheduler.start()
 
